@@ -1,7 +1,7 @@
 import numpy as np
 from zzsampler import zigzag
 import matplotlib.pyplot as plt
-Sigma = np.array([[1,0.9],[0.9,1]])
+Sigma = np.array([[1,0],[0,1]])
 Mu = np.array([1,1])
 Sigma_inv = np.linalg.inv(Sigma)
 def mult_gaussian_gradient(x):
