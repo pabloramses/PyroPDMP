@@ -18,7 +18,7 @@ initial_pos = np.array([-1])
 sampler = zigzag(gaussian_gradient, bound, initial_pos, niter = 1000, inv_int_bound= inv_int_bound)
 sampler.sample()
 
-bsamp = bps(gaussian_gradient, bound, initial_pos, niter = 1000, inv_int_bound=inv_int_bound)
+bsamp = bps(gaussian_gradient, bound, initial_pos, niter = 1000, lr = 1, inv_int_bound=inv_int_bound)
 
 bsamp.sample()
 

@@ -27,7 +27,7 @@ def inv_int_bound(t, x, v):
     return (-a + np.sqrt((a ** 2) + 2 * b * t)) / b
 
 initial_pos = np.array([-1,7])
-sampler = bps(mult_gaussian_gradient, bound, initial_pos, niter = 1000, inv_int_bound= inv_int_bound)
+sampler = bps(mult_gaussian_gradient, bound, initial_pos, niter = 1000, lr = 100, inv_int_bound= inv_int_bound)
 sampler.sample()
 
 plt.plot(sampler.pos[0], sampler.pos[1])
