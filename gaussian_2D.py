@@ -21,7 +21,6 @@ def inv_int_bound(t, x, v):
         a = np.dot(np.abs(Sigma_inv[i, :]), np.abs(x - Mu))
         b = np.sum(np.abs(Sigma_inv[i, :]))
         evTimes = np.append(evTimes, (-a+np.sqrt((a**2)+2*b*t[i]))/b)
-        print(evTimes)
     return evTimes
 
 initial_pos = np.array([-1,7])
