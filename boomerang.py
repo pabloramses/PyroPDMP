@@ -50,7 +50,7 @@ class boomerang(nhppSample):
                 if t>refresh:
                     skel = self.elliptic_dynamics(self.pos[:, i-1], self.c, self.vel[:,i-1], refresh)
                     self.pos[:, i] = skel[0]
-                    self.vel[:, i] = np.random.multivariate_normal(np.zeros(self.d), np.eye(self.d))
+                    self.vel[:, i] = np.random.multivariate_normal(np.zeros(self.d), self.sigma_ref)
                     self.times.append(refresh)
                     break
 
