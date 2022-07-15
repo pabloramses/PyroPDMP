@@ -21,7 +21,8 @@ class boomerang(nhppSample):
         return np.array([x_t, v_t])
 
     def rate(self, time, pos, vel):
-        self.Rate = (np.dot(vel, self.gradient(pos + time * vel))>0)*np.dot(vel, self.gradient(pos + time * vel))
+        #skel = self.elliptic_dynamics(pos, self.c, vel, time)
+        self.Rate = (np.dot(vel, self.gradient(pos))>0)*np.dot(vel, self.gradient(pos))
 
     def sample(self):
         self.times = [0]
@@ -30,7 +31,7 @@ class boomerang(nhppSample):
         self.vel = np.zeros((self.d, self.niter))
 
         self.pos[:, 0] = self.initial_pos
-        self.vel[:, 0] = np.random.multivariate_normal(np.zeros(self.d), np.eye(self.d), size=1)
+        self.vel[:, 0] = np.random.multivariate_normal(np.zeros(self.d), self.sigma_ref, size=1)
 
         for i in range(1,self.niter):
             refresh = np.random.exponential(self.lr)
