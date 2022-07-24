@@ -46,10 +46,10 @@ class bps(nhppSample):
 
                 prop_x = prop_x+t*prop_v
 
-                self.rate(t, prop_x, prop_v)
+                self.rate(t, self.pos[:, i - 1], self.vel[:, i - 1])
 
                 r = np.float32(self.Rate)
-                b = np.float32(self.bound(t, 0, prop_x, prop_v))
+                b = np.float32(self.bound(t, 0, self.pos[:, i - 1], self.vel[:, i - 1]))
                 u = np.random.random()
                 if u < (r/b):
                     self.pos[:, i] = prop_x
