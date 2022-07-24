@@ -124,7 +124,6 @@ def Boomerang(g_E, M1, T, x_ref, Sigma_inv, refresh_rate=1.0):
             # so we refresh
             updateSkeleton = True
             v = np.dot(Sigma_sqrt, np.random.normal(0,1,dim))
-            print(v)
             phaseSpaceNorm = np.sqrt(np.dot(x-x_ref,x-x_ref) + np.dot(v,v))
             a = np.dot(v, gradU)
             b = M1 * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
@@ -138,10 +137,8 @@ def Boomerang(g_E, M1, T, x_ref, Sigma_inv, refresh_rate=1.0):
             pass
 
         if updateSkeleton:
-            #x_skeleton = np.vstack((x_skeleton, np.transpose(x)))
-            x_skeleton = np.append(x_skeleton, x)
-            #v_skeleton = np.concatenate((v_skeleton, v), axis=0)
-            v_skeleton = np.append(v_skeleton, v)
+            x_skeleton = np.vstack((x_skeleton, np.transpose(x)))
+            v_skeleton = np.vstack((v_skeleton, np.transpose(v)))
             t_skeleton = np.append(t_skeleton, t)
             updateSkeleton = False
 
