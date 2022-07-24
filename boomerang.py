@@ -39,6 +39,8 @@ class boomerang(nhppSample):
 
             t = 0
 
+
+
             while accepted:
                 prop_x = self.pos[:, i - 1]
                 prop_v = self.vel[:, i - 1]
@@ -55,14 +57,14 @@ class boomerang(nhppSample):
                     self.times.append(refresh)
                     break
 
-                skel = self.elliptic_dynamics(prop_x, self.c, prop_v, t)
+                skel = self.elliptic_dynamics(self.pos[:, i - 1], self.c, self.vel[:, i - 1], t)
                 prop_x = skel[0]
                 prop_v = skel[1]
 
-                self.rate(t, prop_x, prop_v)
+                self.rate(t, self.pos[:, i - 1], self.vel[:, i - 1])
 
                 r = np.float32(self.Rate)
-                b = np.float32(self.bound(t, 0, prop_x, prop_v))
+                b = np.float32(self.bound(t, 0, self.pos[:, i - 1], self.vel[:, i - 1]))
                 u = np.random.random()
                 if u < (r/b):
                     self.pos[:, i] = prop_x
