@@ -96,14 +96,14 @@ class Boomerang(MCMCKernel):
         self._jit_options = jit_options
         self._ignore_jit_warnings = ignore_jit_warnings
         self._init_strategy = init_strategy
-
+        self.a = 0.01
         self.potential_fn = potential_fn
 
         # Some inputs specific for ZigZag
         self.Sigma = Sigma #np.array([[3,0.5],[0.5,3]])
         self.dim = self.Sigma.shape[0]
-        self.z_ref = np.zeros(self.dim)
-        self.Q = np.linalg.norm(np.linalg.inv(self.Sigma))
+        self.z_ref = np.zeros(self.dim) #mean of reference measure
+        self.Q = np.linalg.norm(np.linalg.inv(self.Sigma)) #currently -> bound on the hessian of the energy
         #self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
 
@@ -117,11 +117,11 @@ class Boomerang(MCMCKernel):
         # )
         super().__init__()
 
-    def _reset(self):
+    def _reset(self): #cleans all attributes
         self._no_proposed_switches = 0
         self._no_rejected_switches = 0
         self._no_accepted_switches = 0
-        self._no_accepted_refresh_switches = 0
+        self._no_refresh_switches = 0
         self._no_boundary_violated = 0
         self._t = 0
         self._accept_cnt = 0
@@ -198,6 +198,8 @@ class Boomerang(MCMCKernel):
             [
                 ("prop. of boundary violation", "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
                 ("prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+                ("prop. of accepted steps", "{:.3f}".format(self._no_accepted_switches / self.a)),
+                ("prop. of refreshed steps", "{:.3f}".format(self._no_refresh_switches/self.a)),
             ]
         )
 
@@ -207,7 +209,7 @@ class Boomerang(MCMCKernel):
             #"divergences": self._divergences,
             "no of boundary violations": self._no_boundary_violated,
             "prop. of accepted switches": self._no_accepted_switches / self._no_proposed_switches,
-            "prop. of accepted switches due to excess": self._no_accepted_refresh_switches / self._no_accepted_switches,
+            "prop. of accepted switches due to excess": self._no_refresh_switches / self._no_accepted_switches,
         }
 
     def sample(self, params):
@@ -280,6 +282,7 @@ class Boomerang(MCMCKernel):
                     b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
                     updateSkeleton = True
                     finished = True
+                    self._no_accepted_switches = self._no_accepted_switches + 1
                 else:
                     a = switch_rate
                     updateSkeleton = False
@@ -290,7 +293,7 @@ class Boomerang(MCMCKernel):
 
             if (not finished and dt_switch_proposed >= dt_refresh):
                 # so we refresh
-                self._no_accepted_refresh_switches = self._no_accepted_refresh_switches + 1
+                self._no_refresh_switches = self._no_refresh_switches + 1
                 updateSkeleton = True
                 v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
                 phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
@@ -303,7 +306,8 @@ class Boomerang(MCMCKernel):
                 pass
 
             if updateSkeleton:
-                self._no_accepted_switches = self._no_accepted_switches + 1
+                self.a = self.a+1
+                #self._no_accepted_switches = self._no_accepted_switches + 1
                 updateSkeleton = False
                 self._cache(z, v, potential_energy_new, z_grads_new)
 
@@ -352,6 +356,6 @@ def model(data):
      return y
 boomerang_kernel = Boomerang(model, Sigma=np.array([[3,0.5],[0.5,3]]), refresh_rate = 1.0)
 from pyro.infer import MCMC
-mcmc = MCMC(boomerang_kernel, num_samples=5000)
+mcmc = MCMC(boomerang_kernel, num_samples=1000)
 mcmc.run(data)
 print(mcmc.get_samples()['beta'].mean(0))
