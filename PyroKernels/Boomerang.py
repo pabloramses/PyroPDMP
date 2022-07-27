@@ -99,7 +99,7 @@ class Boomerang(MCMCKernel):
         self.a = 0.01
         self.potential_fn = potential_fn
 
-        # Some inputs specific for ZigZag
+        # Some inputs specific for Boomerang
         self.Sigma = Sigma #np.array([[3,0.5],[0.5,3]])
         self.dim = self.Sigma.shape[0]
         self.z_ref = np.zeros(self.dim) #mean of reference measure
@@ -295,6 +295,7 @@ class Boomerang(MCMCKernel):
                 # so we refresh
                 self._no_refresh_switches = self._no_refresh_switches + 1
                 updateSkeleton = True
+                finished = True
                 v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
                 phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
                 a = np.dot(v, gradU)
