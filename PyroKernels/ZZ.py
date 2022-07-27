@@ -102,7 +102,7 @@ class ZZ(MCMCKernel):
 
         # Some inputs specific for ZigZag
         self.Q = Q #np.array([[2000,2000],[2000,2000]])
-        self.Q_dim = self.Q.shape[0]
+        self.dim = self.Q.shape[0]
         self.excess_rate = excess_rate
 
         self._reset()
@@ -116,6 +116,11 @@ class ZZ(MCMCKernel):
         super().__init__()
 
     def _reset(self):
+        self._no_proposed_switches = 0
+        self._no_rejected_switches = 0
+        self._no_accepted_switches = 0
+        self._no_accepted_excess_switches = 0
+        self._no_boundary_violated = 0
         self._t = 0
         self._accept_cnt = 0
         self._mean_accept_prob = 0.0
@@ -164,7 +169,7 @@ class ZZ(MCMCKernel):
         else:
             z_grads, potential_energy = {}, self.potential_fn(self.initial_params)
         # Initiate a velocity
-        initial_v = np.random.choice([-1, 1], size=self.Q_dim)
+        initial_v = np.random.choice([-1, 1], size=self.dim)
         self._cache(self.initial_params, initial_v, potential_energy, z_grads)
 
     def cleanup(self):
@@ -186,20 +191,22 @@ class ZZ(MCMCKernel):
         return self._z_last, self._v_last, self._potential_energy_last, self._z_grads_last
 
     def logging(self):
-        return None
-        # return OrderedDict(
-        #     [
-        #         ("step size", "{:.2e}".format(self.step_size)),
-        #         ("acc. prob", "{:.3f}".format(self._mean_accept_prob)),
-        #     ]
-        # )
+        #return None
+        return OrderedDict(
+            [
+                #("step size", "{:.2e}".format(self.step_size)),
+                ("prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+            ]
+        )
 
     def diagnostics(self):
-        return {}
-        # return {
-        #     "divergences": self._divergences,
-        #     "acceptance rate": self._accept_cnt / (self._t - self._warmup_steps),
-        # }
+        #return {}
+        return {
+            #"divergences": self._divergences,
+            "no of boundary violations": self._no_boundary_violated,
+            "prop. of accepted switches": self._no_accepted_switches / self._no_proposed_switches,
+            "prop. of accepted switches due to excess": self._no_accepted_excess_switches / self._no_accepted_switches,
+        }
 
     def switchingtime(self, a, b, u=np.random.random()):
         # generate switching time for rate of the form max(0, a + b s) + c
@@ -232,7 +239,7 @@ class ZZ(MCMCKernel):
         # recompute PE when cache is cleared
         if z is None:
             z = params
-            v = np.random.choice([-1, 1], size=self.Q_dim)
+            v = np.random.choice([-1, 1], size=self.dim)
             z_grads, potential_energy = potential_grad(self.potential_fn, z)
             self._cache(z, v, potential_energy, z_grads)
         # Extract key of z
@@ -247,18 +254,19 @@ class ZZ(MCMCKernel):
         finished = False
 
         # Compute switching time
-        b = np.dot(self.Q, np.ones(shape=(self.Q_dim,)))
+        b = np.dot(self.Q, np.ones(shape=(self.dim,)))
         a = np.multiply(z_grads_numpy, v)
         Δt_proposed_switches = [self.switchingtime(a[i], b[i]) for i in range(len(a))]
         if (self.excess_rate == 0.0):
             Δt_excess = np.Inf
         else:
-            Δt_excess = -np.log(np.random())/(self.Q_dim*self.excess_rate)
+            Δt_excess = -np.log(np.random())/(self.dim*self.excess_rate)
 
         while not finished:
             i = np.argmin(Δt_proposed_switches)  # O(d)
             Δt_switch_proposed = Δt_proposed_switches[i]
             Δt = min(Δt_switch_proposed, Δt_excess)
+            self._no_proposed_switches = self._no_proposed_switches + 1
             # T = 10
             # if t + Δt > T:
             #     Δt = T - t
@@ -278,10 +286,11 @@ class ZZ(MCMCKernel):
                 switch_rate = v[i] * z_grads_new_numpy[i]
                 proposedSwitchIntensity = a[i]
                 if proposedSwitchIntensity < switch_rate:
+                    self._no_boundary_violated = self._no_boundary_violated + 1
                     print("ERROR: Switching rate exceeds bound.")
                     print(" simulated rate: ", proposedSwitchIntensity)
                     print(" actual switching rate: ", switch_rate)
-                    raise ValueError("Switching rate exceeds bound.")
+                    #raise ValueError("Switching rate exceeds bound.")
                     # error()
 
                 if np.random.random() * proposedSwitchIntensity <= switch_rate:
@@ -293,6 +302,7 @@ class ZZ(MCMCKernel):
                 else:
                     a[i] = switch_rate
                     updateSkeleton = False
+                    self._no_rejected_switches = self._no_rejected_switches + 1
 
                 # update refreshment time and switching time bound
                 Δt_excess = Δt_excess - Δt_switch_proposed
@@ -302,15 +312,17 @@ class ZZ(MCMCKernel):
                 # so we switch due to excess switching rate
                 updateSkeleton = True
                 finished = True
-                i = np.random.choice(range(1, self.Q_dim + 1), size=1)
+                i = np.random.choice(range(1, self.dim + 1), size=1)
                 v[i] = -v[i]
                 a[i] = v[i] * z_grads_new[i]
+                self._no_accepted_excess_switches = self._no_accepted_excess_switches + 1
 
                 # update upcoming event times
                 Δt_proposed_switches = Δt_proposed_switches - Δt_excess
-                Δt_excess = -np.log(np.random()) / (self.Q_dim * self.excess_rate)
+                Δt_excess = -np.log(np.random()) / (self.dim * self.excess_rate)
 
             if updateSkeleton:
+                self._no_accepted_switches = self._no_accepted_switches + 1
                 updateSkeleton = False
                 self._cache(z, v, potential_energy_new, z_grads_new)
 
