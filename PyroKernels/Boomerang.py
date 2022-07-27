@@ -118,6 +118,11 @@ class Boomerang(MCMCKernel):
         super().__init__()
 
     def _reset(self):
+        self._no_proposed_switches = 0
+        self._no_rejected_switches = 0
+        self._no_accepted_switches = 0
+        self._no_accepted_refresh_switches = 0
+        self._no_boundary_violated = 0
         self._t = 0
         self._accept_cnt = 0
         self._mean_accept_prob = 0.0
@@ -188,20 +193,22 @@ class Boomerang(MCMCKernel):
         return self._z_last, self._v_last, self._potential_energy_last, self._z_grads_last
 
     def logging(self):
-        return None
-        # return OrderedDict(
-        #     [
-        #         ("step size", "{:.2e}".format(self.step_size)),
-        #         ("acc. prob", "{:.3f}".format(self._mean_accept_prob)),
-        #     ]
-        # )
+        #return None
+        return OrderedDict(
+            [
+                ("prop. of boundary violation", "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
+                ("prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+            ]
+        )
 
     def diagnostics(self):
-        return {}
-        # return {
-        #     "divergences": self._divergences,
-        #     "acceptance rate": self._accept_cnt / (self._t - self._warmup_steps),
-        # }
+        #return {}
+        return {
+            #"divergences": self._divergences,
+            "no of boundary violations": self._no_boundary_violated,
+            "prop. of accepted switches": self._no_accepted_switches / self._no_proposed_switches,
+            "prop. of accepted switches due to excess": self._no_accepted_refresh_switches / self._no_accepted_switches,
+        }
 
     def sample(self, params):
         z, v, potential_energy, z_grads = self._fetch_from_cache()
@@ -232,6 +239,7 @@ class Boomerang(MCMCKernel):
         while not finished :
             dt_switch_proposed = self.switchingtime(a,b)
             dt = np.minimum(dt_switch_proposed,dt_refresh)
+            self._no_proposed_switches = self._no_proposed_switches + 1
             # if t + dt > T:
             #     dt = T - t
             #     finished = True
@@ -255,9 +263,10 @@ class Boomerang(MCMCKernel):
                 switch_rate = np.dot(v, gradU) # no need to take positive part
                 simulated_rate = a
                 if simulated_rate < switch_rate:
-                    print("simulated rate: ", simulated_rate)
-                    print("actual switching rate: ", switch_rate)
-                    print("switching rate exceeds bound.")
+                    self._no_boundary_violated = self._no_boundary_violated + 1
+                    #print("simulated rate: ", simulated_rate)
+                    #print("actual switching rate: ", switch_rate)
+                    #print("switching rate exceeds bound.")
                     # Should not we raise value error?
                     #raise ValueError("Switching rate exceeds bound.")
 
@@ -274,12 +283,14 @@ class Boomerang(MCMCKernel):
                 else:
                     a = switch_rate
                     updateSkeleton = False
+                    self._no_rejected_switches = self._no_rejected_switches + 1
 
                 # update refreshment time and switching time bound
                 dt_refresh = dt_refresh - dt_switch_proposed
 
             if (not finished and dt_switch_proposed >= dt_refresh):
                 # so we refresh
+                self._no_accepted_refresh_switches = self._no_accepted_refresh_switches + 1
                 updateSkeleton = True
                 v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
                 phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
@@ -292,7 +303,7 @@ class Boomerang(MCMCKernel):
                 pass
 
             if updateSkeleton:
-                print('One step done correctly')
+                self._no_accepted_switches = self._no_accepted_switches + 1
                 updateSkeleton = False
                 self._cache(z, v, potential_energy_new, z_grads_new)
 
