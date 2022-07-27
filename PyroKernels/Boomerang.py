@@ -196,7 +196,7 @@ class Boomerang(MCMCKernel):
         #return None
         return OrderedDict(
             [
-                #("step size", "{:.2e}".format(self.step_size)),
+                ("prop. of boundary violation", "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
                 ("prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
             ]
         )
