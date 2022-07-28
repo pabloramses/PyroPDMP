@@ -77,6 +77,7 @@ class Boomerang(MCMCKernel):
         self,
         model=None,
         potential_fn=None,
+        hessian_bound = None,
         transforms=None,
         Sigma = None,
         refresh_rate = 1.0,
@@ -103,7 +104,10 @@ class Boomerang(MCMCKernel):
         self.Sigma = Sigma #np.array([[3,0.5],[0.5,3]])
         self.dim = self.Sigma.shape[0]
         self.z_ref = np.zeros(self.dim) #mean of reference measure
-        self.Q = np.linalg.norm(np.linalg.inv(self.Sigma)) #currently -> bound on the hessian of the energy
+        if hessian_bound == None:
+            self.Q = np.linalg.norm(np.linalg.inv(self.Sigma)) #currently -> bound on the hessian of the energy for gaussian
+        else:
+            self.Q = hessian_bound
         #self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
 
@@ -345,17 +349,17 @@ class Boomerang(MCMCKernel):
         w_new = -y0 * np.sin(t) + w0 * np.cos(t)
         return (y_new, w_new)
 
-true_coefs = torch.tensor([1., 2.])
-data = torch.randn(2000, 2)
-dim = 2
-labels = dist.Bernoulli(logits=(true_coefs * data).sum(-1)).sample()
-def model(data):
-     coefs_mean = torch.zeros(dim)
-     coefs = pyro.sample('beta', dist.Normal(coefs_mean, torch.ones(2)))
-     y = pyro.sample('y', dist.Bernoulli(logits=(coefs * data).sum(-1)), obs=labels)
-     return y
-boomerang_kernel = Boomerang(model, Sigma=np.array([[3,0.5],[0.5,3]]), refresh_rate = 1.0)
-from pyro.infer import MCMC
-mcmc = MCMC(boomerang_kernel, num_samples=1000)
-mcmc.run(data)
-print(mcmc.get_samples()['beta'].mean(0))
+#true_coefs = torch.tensor([1., 2.])
+#data = torch.randn(2000, 2)
+#dim = 2
+#labels = dist.Bernoulli(logits=(true_coefs * data).sum(-1)).sample()
+#def model(data):
+     #coefs_mean = torch.zeros(dim)
+     #coefs = pyro.sample('beta', dist.Normal(coefs_mean, torch.ones(2)))
+     #y = pyro.sample('y', dist.Bernoulli(logits=(coefs * data).sum(-1)), obs=labels)
+     #return y
+#boomerang_kernel = Boomerang(model, Sigma=np.array([[3,0.5],[0.5,3]]), refresh_rate = 1.0)
+#from pyro.infer import MCMC
+#mcmc = MCMC(boomerang_kernel, num_samples=1000)
+#mcmc.run(data)
+#print(mcmc.get_samples()['beta'].mean(0))
