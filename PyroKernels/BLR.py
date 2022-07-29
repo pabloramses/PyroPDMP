@@ -2,7 +2,7 @@ from boomerang_sampler import Boomerang
 import torch
 import pyro
 
-"Definition of the model asdfg"
+"Definition of the model"
 true_coefs = torch.tensor([1., 2.])
 data = torch.randn(2000, 2)
 dim = 2
