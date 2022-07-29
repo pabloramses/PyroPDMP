@@ -1,4 +1,5 @@
 import numpy as np
+import scypy as sci
 
 
 def normal_density(x, mu, sigma):
