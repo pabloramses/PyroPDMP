@@ -17,7 +17,7 @@ from pyro.infer.mcmc.mcmc_kernel import MCMCKernel
 from pyro.infer.mcmc.util import initialize_model
 from pyro.ops.integrator import potential_grad, velocity_verlet
 from pyro.util import optional, torch_isnan
-from scipy import optimize
+#from scipy import optimize
 
 class Boomerang(MCMCKernel):
     r"""
