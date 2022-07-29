@@ -81,7 +81,6 @@ class Boomerang(MCMCKernel):
         transforms=None,
         Sigma = None,
         refresh_rate = 1.0,
-        ihpp_sampler = None,
         max_plate_nesting=None,
         jit_compile=False,
         jit_options=None,
@@ -111,10 +110,6 @@ class Boomerang(MCMCKernel):
             self.Q = hessian_bound
         #self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
-        if ihpp_sampler == None:
-            self.ihpp_sampler = 'Exact'
-        else:
-            self.ihpp_sampler = ihpp_sampler
 
         self._reset()
         # self._adapter = WarmupAdapter(
@@ -242,15 +237,10 @@ class Boomerang(MCMCKernel):
         finished = False
 
         dt_refresh = -np.log(np.random.rand())/self.refresh_rate
-        if self.ihpp_sampler == 'Exact':
-            M2 = np.sqrt(np.dot(gradU, gradU))
-            phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
-            a = np.dot(v, gradU)
-            b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
-        elif self.ihpp_sampler == 'Corbella':
-            b = 0
-            arg, a = self.corbella(z_numpy, v, dt_refresh)
-
+        M2 = np.sqrt(np.dot(gradU, gradU))
+        phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
+        a = np.dot(v, gradU)
+        b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
 
         while not finished :
             dt_switch_proposed = self.switchingtime(a,b)
@@ -272,12 +262,9 @@ class Boomerang(MCMCKernel):
             z_grads_new_numpy = z_grads_new[key_of_z].numpy()
 
             t = t + dt
-            if self.ihpp_sampler == 'Exact':
-                a = a + b*dt
-
+            a = a + b*dt
             gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy-self.z_ref)) # O(d^2) to compute
             if not finished and dt_switch_proposed < dt_refresh:
-                #if using corbella approach no need to update anything related to bound unless refresh
                 switch_rate = np.dot(v, gradU) # no need to take positive part
                 simulated_rate = a
                 if simulated_rate < switch_rate:
@@ -293,19 +280,15 @@ class Boomerang(MCMCKernel):
                     # obtain new velocity by reflection
                     skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
                     v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
-
-                    #if we are exact sampling using bounds in [1] then update the slope and intercept
-                    if self.ihpp_sampler == 'Exact':
-                        phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
-                        a = -switch_rate
-                        b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
+                    phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
+                    a = -switch_rate
+                    b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
 
                     updateSkeleton = True
                     finished = True
                     self._no_accepted_switches = self._no_accepted_switches + 1
                 else:
-                    if self.ihpp_sampler == 'Exact':
-                        a = switch_rate
+                    a = switch_rate
                     updateSkeleton = False
                     self._no_rejected_switches = self._no_rejected_switches + 1
 
@@ -319,10 +302,9 @@ class Boomerang(MCMCKernel):
                 updateSkeleton = True
                 finished = True
                 v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
-                if self.ihpp_sampler == 'Exact':
-                    phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
-                    a = np.dot(v, gradU)
-                    b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
+                phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
+                a = np.dot(v, gradU)
+                b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
 
                 # compute new refreshment time
                 dt_refresh = -np.log(np.random.rand())/self.refresh_rate
@@ -334,20 +316,8 @@ class Boomerang(MCMCKernel):
                 #self._no_accepted_switches = self._no_accepted_switches + 1
                 updateSkeleton = False
                 self._cache(z, v, potential_energy_new, z_grads_new)
-                if self.ihpp_sampler == 'Corbella':
-                    arg, a = self.corbella(z_numpy, v, dt_refresh)
 
         return z.copy()
-
-    def corbella(self, x0, v0, tmax):
-        def minus_rate_of_t(t):
-            zt, vt = self.EllipticDynamics(t, x0, v0)
-            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))
-            ft = -np.dot(vt, reg_gradient(xt))
-            return np.minimum(0, ft)
-
-        argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
-        return argmin, -minus_rate_of_t(argmin)
 
 
     def switchingtime(self, a, b, u=np.random.random()):
