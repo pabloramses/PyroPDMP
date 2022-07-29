@@ -120,7 +120,7 @@ def Boomerang(g_E, M1, T, x_ref, Sigma_inv, refresh_rate=1.0):
             # update refreshment time and switching time bound
             dt_refresh = dt_refresh - dt_switch_proposed
 
-        if (not finished and dt_switch_proposed >= dt_refresh):
+        elif not finished:
             # so we refresh
             updateSkeleton = True
             v = np.dot(Sigma_sqrt, np.random.normal(0,1,dim))
