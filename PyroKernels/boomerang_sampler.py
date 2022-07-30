@@ -231,119 +231,171 @@ class Boomerang(MCMCKernel):
             self._cache(z, v, potential_energy, z_grads)
 
         # Extract key of z
-        key_of_z = list(z.keys())[0]
+        self.key_of_z = list(z.keys())[0]
         # convert to Numpy array
-        z_numpy, z_grads_numpy = z[key_of_z].numpy(), z_grads[key_of_z].numpy()
+        z_numpy, z_grads_numpy = z[self.key_of_z].numpy(), z_grads[self.key_of_z].numpy()
 
         t = 0.0
         # Modified gradU
-        gradU = z_grads_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy-self.z_ref)) # O(d^2) to compute
         updateSkeleton = False
         finished = False
 
         dt_refresh = -np.log(np.random.rand())/self.refresh_rate
         if self.ihpp_sampler == 'Exact':
+            gradU = z_grads_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))  # O(d^2) to compute
             M2 = np.sqrt(np.dot(gradU, gradU))
             phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
             a = np.dot(v, gradU)
             b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
-        elif self.ihpp_sampler == 'Corbella':
-            b = 0
-            arg, a = self.corbella(z_numpy, v, dt_refresh)
+            while not finished :
+                dt_switch_proposed = self.switchingtime(a,b)
+                dt = np.minimum(dt_switch_proposed,dt_refresh)
+                self._no_proposed_switches = self._no_proposed_switches + 1
+                # if t + dt > T:
+                #     dt = T - t
+                #     finished = True
+                #     updateSkeleton = True
 
+                # Update z and v
+                (y, v) = self.EllipticDynamics(dt, z_numpy-self.z_ref, v)
+                z_numpy = y + self.z_ref
 
-        while not finished :
-            dt_switch_proposed = self.switchingtime(a,b)
-            dt = np.minimum(dt_switch_proposed,dt_refresh)
-            self._no_proposed_switches = self._no_proposed_switches + 1
-            # if t + dt > T:
-            #     dt = T - t
-            #     finished = True
-            #     updateSkeleton = True
+                # Convert to tensor to save and to compute gradient
+                z = {self.key_of_z:torch.from_numpy(z_numpy)}
+                z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
+                # convert z_grads_new back to numpy
+                z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
 
-            # Update z and v
-            (y, v) = self.EllipticDynamics(dt, z_numpy-self.z_ref, v)
-            z_numpy = y + self.z_ref
-
-            # Convert to tensor to save and to compute gradient
-            z = {key_of_z:torch.from_numpy(z_numpy)}
-            z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
-            # convert z_grads_new back to numpy
-            z_grads_new_numpy = z_grads_new[key_of_z].numpy()
-
-            t = t + dt
-            if self.ihpp_sampler == 'Exact':
+                t = t + dt
                 a = a + b*dt
 
-            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy-self.z_ref)) # O(d^2) to compute
-            if not finished and dt_switch_proposed < dt_refresh:
-                #if using corbella approach no need to update anything related to bound unless refresh
-                switch_rate = np.dot(v, gradU) # no need to take positive part
-                simulated_rate = a
-                if simulated_rate < switch_rate:
-                    self._no_boundary_violated = self._no_boundary_violated + 1
-                    #print("simulated rate: ", simulated_rate)
-                    #print("actual switching rate: ", switch_rate)
-                    #print("switching rate exceeds bound.")
-                    # Should not we raise value error?
-                    #raise ValueError("Switching rate exceeds bound.")
+                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy-self.z_ref)) # O(d^2) to compute
+                if not finished and dt_switch_proposed < dt_refresh:
+                    #if using corbella approach no need to update anything related to bound unless refresh
+                    switch_rate = np.dot(v, gradU) # no need to take positive part
+                    simulated_rate = a
+                    if simulated_rate < switch_rate:
+                        self._no_boundary_violated = self._no_boundary_violated + 1
+                        #print("simulated rate: ", simulated_rate)
+                        #print("actual switching rate: ", switch_rate)
+                        #print("switching rate exceeds bound.")
+                        # Should not we raise value error?
+                        #raise ValueError("Switching rate exceeds bound.")
 
-                #simul3 = 0.01
-                if np.random.rand() * simulated_rate <= switch_rate:
-                    # obtain new velocity by reflection
-                    skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
-                    v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
-
-                    #if we are exact sampling using bounds in [1] then update the slope and intercept
-                    if self.ihpp_sampler == 'Exact':
+                    #simul3 = 0.01
+                    if np.random.rand() * simulated_rate <= switch_rate:
+                        # obtain new velocity by reflection
+                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
                         phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
                         a = -switch_rate
                         b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
 
+                        updateSkeleton = True
+                        finished = True
+                        self._no_accepted_switches = self._no_accepted_switches + 1
+                    else:
+                        a = switch_rate
+                        updateSkeleton = False
+                        self._no_rejected_switches = self._no_rejected_switches + 1
+
+                    # update refreshment time and switching time bound
+                    dt_refresh = dt_refresh - dt_switch_proposed
+
+
+                elif not finished:
+                    # so we refresh
+                    self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
                     finished = True
-                    self._no_accepted_switches = self._no_accepted_switches + 1
-                else:
-                    if self.ihpp_sampler == 'Exact':
-                        a = switch_rate
-                    updateSkeleton = False
-                    self._no_rejected_switches = self._no_rejected_switches + 1
-
-                # update refreshment time and switching time bound
-                dt_refresh = dt_refresh - dt_switch_proposed
-
-
-            elif not finished:
-                # so we refresh
-                self._no_refresh_switches = self._no_refresh_switches + 1
-                updateSkeleton = True
-                finished = True
-                v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
-                if self.ihpp_sampler == 'Exact':
+                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
                     phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
                     a = np.dot(v, gradU)
                     b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
 
-                # compute new refreshment time
-                dt_refresh = -np.log(np.random.rand())/self.refresh_rate
-            else:
-                pass
+                    # compute new refreshment time
+                    dt_refresh = -np.log(np.random.rand())/self.refresh_rate
+                else:
+                    pass
 
-            if updateSkeleton:
-                self.a = self.a+1
-                #self._no_accepted_switches = self._no_accepted_switches + 1
-                updateSkeleton = False
-                self._cache(z, v, potential_energy_new, z_grads_new)
-                if self.ihpp_sampler == 'Corbella':
-                    arg, a = self.corbella(z_numpy, v, dt_refresh)
+                if updateSkeleton:
+                    self.a = self.a+1
+                    #self._no_accepted_switches = self._no_accepted_switches + 1
+                    updateSkeleton = False
+                    self._cache(z, v, potential_energy_new, z_grads_new)
+
+        elif self.ihpp_sampler == 'Corbella':
+            while not finished :
+                arg, a = self.corbella(z_numpy, v, dt_refresh)
+                dt_switch_proposed = self.switchingtime(a,0)
+                dt = np.minimum(dt_switch_proposed,dt_refresh)
+                self._no_proposed_switches = self._no_proposed_switches + 1
+                # Update z and v
+                (y, v) = self.EllipticDynamics(dt, z_numpy-self.z_ref, v)
+                z_numpy = y + self.z_ref
+
+                # Convert to tensor to save and to compute gradient
+                z = {self.key_of_z:torch.from_numpy(z_numpy)}
+                z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
+                # convert z_grads_new back to numpy
+                z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
+                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+                t = t + dt
+                if not finished and dt_switch_proposed < dt_refresh:
+                    switch_rate = np.dot(v, gradU) # no need to take positive part
+                    simulated_rate = a
+                    if simulated_rate < switch_rate:
+                        self._no_boundary_violated = self._no_boundary_violated + 1
+                        #print("simulated rate: ", simulated_rate)
+                        #print("actual switching rate: ", switch_rate)
+                        #print("switching rate exceeds bound.")
+                        # Should not we raise value error?
+                        #raise ValueError("Switching rate exceeds bound.")
+
+                    #simul3 = 0.01
+                    if np.random.rand() * simulated_rate <= switch_rate:
+                        # obtain new velocity by reflection
+                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
+                        updateSkeleton = True
+                        finished = True
+                        self._no_accepted_switches = self._no_accepted_switches + 1
+                    else:
+                        updateSkeleton = False
+                        self._no_rejected_switches = self._no_rejected_switches + 1
+
+                    # update refreshment time and switching time bound
+                    dt_refresh = dt_refresh - dt_switch_proposed
+
+
+                elif not finished:
+                    # so we refresh
+                    self._no_refresh_switches = self._no_refresh_switches + 1
+                    updateSkeleton = True
+                    finished = True
+                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
+
+                    # compute new refreshment time
+                    dt_refresh = -np.log(np.random.rand())/self.refresh_rate
+                else:
+                    pass
+
+                if updateSkeleton:
+                    self.a = self.a+1
+                    #self._no_accepted_switches = self._no_accepted_switches + 1
+                    updateSkeleton = False
+                    self._cache(z, v, potential_energy_new, z_grads_new)
+
 
         return z.copy()
 
-    def corbella(self, x0, v0, tmax):
+    def corbella(self, z, v, tmax):
         def minus_rate_of_t(t):
-            zt, vt = self.EllipticDynamics(t, x0, v0)
-            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))
-            ft = -np.dot(vt, reg_gradient(xt))
+            zt, vt = self.EllipticDynamics(t, z, v)
+            z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
+            z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
+            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+            ft = -np.dot(vt, gradU)
             return np.minimum(0, ft)
 
         argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
