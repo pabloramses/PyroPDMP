@@ -101,6 +101,7 @@ class Boomerang(MCMCKernel):
         self._init_strategy = init_strategy
         self.total_samp = 0.01
         self.potential_fn = potential_fn
+        self.eps = np.finfo(float).eps
 
         # Some inputs specific for Boomerang
         self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
@@ -210,7 +211,8 @@ class Boomerang(MCMCKernel):
                 ("prop. of boundary violation",
                  "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
                 (
-                "prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+                    "prop. of accepted switches",
+                    "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
                 ("prop. of accepted steps", "{:.3f}".format(self._no_accepted_switches / self.total_samp)),
                 ("Switch time proposed", self.dt_switch_proposed),
                 ("Bound", self.bound),
@@ -333,9 +335,12 @@ class Boomerang(MCMCKernel):
                     self._cache(z, v, potential_energy_new, z_grads_new)
 
         elif self.ihpp_sampler == 'Corbella':
+            rebound = True
             while not finished:
-                arg, a = self.corbella(z_numpy, v, dt_refresh)
-                self.bound = a
+                if rebound:
+                    arg, a = self.corbella(z_numpy, v, dt_refresh)
+                    self.bound = a
+                    rebound = False
                 if a == 0:
                     dt_switch_proposed = 1e16
                 else:
@@ -411,7 +416,7 @@ class Boomerang(MCMCKernel):
         ft = np.dot(vt, gradU)
         return np.maximum(0, ft)
 
-    def corbella(self, z, v, tmax):
+    def corbella(self, z, v, tmax, check=True):
         def minus_rate_of_t(t):
             zt_numpy, vt = self.EllipticDynamics(t, z, v)
             zt = {self.key_of_z: torch.from_numpy(zt_numpy)}
@@ -421,7 +426,21 @@ class Boomerang(MCMCKernel):
             ft = -np.dot(vt, gradU)
             return np.minimum(0, ft)
 
-        argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
+        if check == False:
+            argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
+        else:
+            candidate, fval, ierr, numit = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=1,
+                                                              maxfun=1, disp=0)
+            if ierr == 0:
+                argmin = candidate
+            elif (minus_rate_of_t(0) >= fval >= minus_rate_of_t(tmax) and minus_rate_of_t(0) >= minus_rate_of_t(
+                    self.eps)):  # ->the rate might be monotonically non-decreasing
+                argmin = tmax
+            elif (minus_rate_of_t(tmax) >= fval >= minus_rate_of_t(0) and minus_rate_of_t(tmax) <= minus_rate_of_t(
+                    tmax - self.eps)):  # ->the rate might be monotonically non-increasing
+                argmin = 0
+            else:
+                argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
         return argmin, -minus_rate_of_t(argmin)
 
     def switchingtime(self, a, b, u=None):
