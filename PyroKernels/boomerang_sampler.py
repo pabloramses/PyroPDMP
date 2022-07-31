@@ -324,6 +324,10 @@ class Boomerang(MCMCKernel):
         # generate switching time for rate of the form max(0, a + b s) + c
         # under the assumptions that b > 0, c > 0
         # u is the random number
+        if u:
+            pass
+        else:
+            u = np.random.rand()
         if (b > 0):
             if (a < 0):
                 return -a / b + self.switchingtime(0.0, b, u)
