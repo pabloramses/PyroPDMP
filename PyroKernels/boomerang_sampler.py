@@ -17,7 +17,8 @@ from pyro.infer.mcmc.mcmc_kernel import MCMCKernel
 from pyro.infer.mcmc.util import initialize_model
 from pyro.ops.integrator import potential_grad, velocity_verlet
 from pyro.util import optional, torch_isnan
-#from scipy import optimize
+from scipy import optimize
+
 
 class Boomerang(MCMCKernel):
     r"""
@@ -74,19 +75,19 @@ class Boomerang(MCMCKernel):
     """
 
     def __init__(
-        self,
-        model=None,
-        potential_fn=None,
-        hessian_bound = None,
-        transforms=None,
-        Sigma = None,
-        refresh_rate = 1.0,
-        ihpp_sampler = None,
-        max_plate_nesting=None,
-        jit_compile=False,
-        jit_options=None,
-        ignore_jit_warnings=False,
-        init_strategy=init_to_uniform,
+            self,
+            model=None,
+            potential_fn=None,
+            hessian_bound=None,
+            transforms=None,
+            Sigma=None,
+            refresh_rate=1.0,
+            ihpp_sampler=None,
+            max_plate_nesting=None,
+            jit_compile=False,
+            jit_options=None,
+            ignore_jit_warnings=False,
+            init_strategy=init_to_uniform,
     ):
         if not ((model is None) ^ (potential_fn is None)):
             raise ValueError("Only one of `model` or `potential_fn` must be specified.")
@@ -98,18 +99,19 @@ class Boomerang(MCMCKernel):
         self._jit_options = jit_options
         self._ignore_jit_warnings = ignore_jit_warnings
         self._init_strategy = init_strategy
-        self.a = 0.01
+        self.total_samp = 0.01
         self.potential_fn = potential_fn
 
         # Some inputs specific for Boomerang
-        self.Sigma = Sigma #np.array([[3,0.5],[0.5,3]])
+        self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
         self.dim = self.Sigma.shape[0]
-        self.z_ref = np.zeros(self.dim) #mean of reference measure
+        self.z_ref = np.zeros(self.dim)  # mean of reference measure
         if hessian_bound == None:
-            self.Q = np.linalg.norm(np.linalg.inv(self.Sigma)) #currently -> bound on the hessian of the energy for gaussian
+            self.Q = np.linalg.norm(
+                np.linalg.inv(self.Sigma))  # currently -> bound on the hessian of the energy for gaussian
         else:
             self.Q = hessian_bound
-        #self.Q = np.array([[2000,2000],[2000,2000]])
+        # self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
         if ihpp_sampler == None:
             self.ihpp_sampler = 'Exact'
@@ -126,7 +128,7 @@ class Boomerang(MCMCKernel):
         # )
         super().__init__()
 
-    def _reset(self): #cleans all attributes
+    def _reset(self):  # cleans all attributes
         self._no_proposed_switches = 0
         self._no_rejected_switches = 0
         self._no_accepted_switches = 0
@@ -180,7 +182,7 @@ class Boomerang(MCMCKernel):
         else:
             z_grads, potential_energy = {}, self.potential_fn(self.initial_params)
         # Initiate a velocity
-        initial_v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
+        initial_v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
         self._cache(self.initial_params, initial_v, potential_energy, z_grads)
 
     def cleanup(self):
@@ -202,20 +204,23 @@ class Boomerang(MCMCKernel):
         return self._z_last, self._v_last, self._potential_energy_last, self._z_grads_last
 
     def logging(self):
-        #return None
+        # return None
         return OrderedDict(
             [
-                ("prop. of boundary violation", "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
-                ("prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
-                ("prop. of accepted steps", "{:.3f}".format(self._no_accepted_switches / self.a)),
-                ("prop. of refreshed steps", "{:.3f}".format(self._no_refresh_switches/self.a)),
+                ("prop. of boundary violation",
+                 "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
+                (
+                "prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+                ("prop. of accepted steps", "{:.3f}".format(self._no_accepted_switches / self.total_samp)),
+                ("Switch time proposed", self.dt_switch_proposed),
+                ("Bound", self.bound),
             ]
         )
 
     def diagnostics(self):
-        #return {}
+        # return {}
         return {
-            #"divergences": self._divergences,
+            # "divergences": self._divergences,
             "no of boundary violations": self._no_boundary_violated,
             "prop. of accepted switches": self._no_accepted_switches / self._no_proposed_switches,
             "prop. of accepted switches due to excess": self._no_refresh_switches / self._no_accepted_switches,
@@ -226,7 +231,7 @@ class Boomerang(MCMCKernel):
         # recompute PE when cache is cleared
         if z is None:
             z = params
-            v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
+            v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
             z_grads, potential_energy = potential_grad(self.potential_fn, z)
             self._cache(z, v, potential_energy, z_grads)
 
@@ -240,16 +245,17 @@ class Boomerang(MCMCKernel):
         updateSkeleton = False
         finished = False
 
-        dt_refresh = -np.log(np.random.rand())/self.refresh_rate
+        dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
         if self.ihpp_sampler == 'Exact':
             gradU = z_grads_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))  # O(d^2) to compute
             M2 = np.sqrt(np.dot(gradU, gradU))
-            phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
+            phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
             a = np.dot(v, gradU)
-            b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
-            while not finished :
-                dt_switch_proposed = self.switchingtime(a,b)
-                dt = np.minimum(dt_switch_proposed,dt_refresh)
+            b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
+            while not finished:
+                dt_switch_proposed = self.switchingtime(a, b)
+                self.dt_switch_proposed = dt_switch_proposed
+                dt = np.minimum(dt_switch_proposed, dt_refresh)
                 self._no_proposed_switches = self._no_proposed_switches + 1
                 # if t + dt > T:
                 #     dt = T - t
@@ -257,39 +263,41 @@ class Boomerang(MCMCKernel):
                 #     updateSkeleton = True
 
                 # Update z and v
-                (y, v) = self.EllipticDynamics(dt, z_numpy-self.z_ref, v)
+                (y, v) = self.EllipticDynamics(dt, z_numpy - self.z_ref, v)
                 z_numpy = y + self.z_ref
 
                 # Convert to tensor to save and to compute gradient
-                z = {self.key_of_z:torch.from_numpy(z_numpy)}
+                z = {self.key_of_z: torch.from_numpy(z_numpy)}
                 z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
                 # convert z_grads_new back to numpy
                 z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
 
                 t = t + dt
-                a = a + b*dt
-
-                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy-self.z_ref)) # O(d^2) to compute
+                a = a + b * dt
+                self.bound = a
+                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma),
+                                                   (z_numpy - self.z_ref))  # O(d^2) to compute
                 if not finished and dt_switch_proposed < dt_refresh:
-                    #if using corbella approach no need to update anything related to bound unless refresh
-                    switch_rate = np.dot(v, gradU) # no need to take positive part
+                    # if using corbella approach no need to update anything related to bound unless refresh
+                    switch_rate = np.dot(v, gradU)  # no need to take positive part
                     simulated_rate = a
                     if simulated_rate < switch_rate:
                         self._no_boundary_violated = self._no_boundary_violated + 1
-                        #print("simulated rate: ", simulated_rate)
-                        #print("actual switching rate: ", switch_rate)
-                        #print("switching rate exceeds bound.")
+                        # print("simulated rate: ", simulated_rate)
+                        # print("actual switching rate: ", switch_rate)
+                        # print("switching rate exceeds bound.")
                         # Should not we raise value error?
-                        #raise ValueError("Switching rate exceeds bound.")
+                        # raise ValueError("Switching rate exceeds bound.")
 
-                    #simul3 = 0.01
+                    # simul3 = 0.01
                     if np.random.rand() * simulated_rate <= switch_rate:
                         # obtain new velocity by reflection
                         skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
-                        v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
+                            np.linalg.cholesky(self.Sigma), skewed_grad)
                         phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
                         a = -switch_rate
-                        b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
+                        b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
 
                         updateSkeleton = True
                         finished = True
@@ -308,55 +316,61 @@ class Boomerang(MCMCKernel):
                     self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
                     finished = True
-                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
-                    phaseSpaceNorm = np.sqrt(np.dot(z_numpy-self.z_ref,z_numpy-self.z_ref) + np.dot(v,v))
+                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                    phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
                     a = np.dot(v, gradU)
-                    b = self.Q * phaseSpaceNorm**2 + M2 * phaseSpaceNorm
+                    b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
 
                     # compute new refreshment time
-                    dt_refresh = -np.log(np.random.rand())/self.refresh_rate
+                    dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
                 else:
                     pass
 
                 if updateSkeleton:
-                    self.a = self.a+1
-                    #self._no_accepted_switches = self._no_accepted_switches + 1
+                    self.total_samp = self.total_samp + 1
+                    # self._no_accepted_switches = self._no_accepted_switches + 1
                     updateSkeleton = False
                     self._cache(z, v, potential_energy_new, z_grads_new)
 
         elif self.ihpp_sampler == 'Corbella':
-            while not finished :
+            while not finished:
                 arg, a = self.corbella(z_numpy, v, dt_refresh)
-                dt_switch_proposed = self.switchingtime(a,0)
-                dt = np.minimum(dt_switch_proposed,dt_refresh)
+                self.bound = a
+                if a == 0:
+                    dt_switch_proposed = 1e16
+                else:
+                    dt_switch_proposed = self.switchingtime(a, 0)
+                self.dt_switch_proposed = dt_switch_proposed
+                dt = np.minimum(dt_switch_proposed, dt_refresh)
                 self._no_proposed_switches = self._no_proposed_switches + 1
                 # Update z and v
-                (y, v) = self.EllipticDynamics(dt, z_numpy-self.z_ref, v)
+                (y, v) = self.EllipticDynamics(dt, z_numpy - self.z_ref, v)
                 z_numpy = y + self.z_ref
 
                 # Convert to tensor to save and to compute gradient
-                z = {self.key_of_z:torch.from_numpy(z_numpy)}
+                z = {self.key_of_z: torch.from_numpy(z_numpy)}
                 z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
                 # convert z_grads_new back to numpy
                 z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
-                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))
                 t = t + dt
                 if not finished and dt_switch_proposed < dt_refresh:
-                    switch_rate = np.dot(v, gradU) # no need to take positive part
+                    switch_rate = np.dot(v, gradU)  # no need to take positive part
                     simulated_rate = a
                     if simulated_rate < switch_rate:
                         self._no_boundary_violated = self._no_boundary_violated + 1
-                        #print("simulated rate: ", simulated_rate)
-                        #print("actual switching rate: ", switch_rate)
-                        #print("switching rate exceeds bound.")
+                        # print("simulated rate: ", simulated_rate)
+                        # print("actual switching rate: ", switch_rate)
+                        # print("switching rate exceeds bound.")
                         # Should not we raise value error?
-                        #raise ValueError("Switching rate exceeds bound.")
+                        # raise ValueError("Switching rate exceeds bound.")
 
-                    #simul3 = 0.01
+                    # simul3 = 0.01
                     if np.random.rand() * simulated_rate <= switch_rate:
                         # obtain new velocity by reflection
                         skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
-                        v = v - 2 * (switch_rate / np.dot(skewed_grad,skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
+                            np.linalg.cholesky(self.Sigma), skewed_grad)
                         updateSkeleton = True
                         finished = True
                         self._no_accepted_switches = self._no_accepted_switches + 1
@@ -373,25 +387,34 @@ class Boomerang(MCMCKernel):
                     self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
                     finished = True
-                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0,1,self.dim))
+                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
 
                     # compute new refreshment time
-                    dt_refresh = -np.log(np.random.rand())/self.refresh_rate
+                    dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
                 else:
                     pass
 
                 if updateSkeleton:
-                    self.a = self.a+1
-                    #self._no_accepted_switches = self._no_accepted_switches + 1
+                    self.total_samp = self.total_samp + 1
+                    # self._no_accepted_switches = self._no_accepted_switches + 1
                     updateSkeleton = False
                     self._cache(z, v, potential_energy_new, z_grads_new)
 
-
         return z.copy()
+
+    def rate_of_t(self, z, v, t):
+        zt_numpy, vt = self.EllipticDynamics(t, z, v)
+        zt = {self.key_of_z: torch.from_numpy(zt_numpy)}
+        z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
+        z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
+        gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+        ft = np.dot(vt, gradU)
+        return np.maximum(0, ft)
 
     def corbella(self, z, v, tmax):
         def minus_rate_of_t(t):
-            zt, vt = self.EllipticDynamics(t, z, v)
+            zt_numpy, vt = self.EllipticDynamics(t, z, v)
+            zt = {self.key_of_z: torch.from_numpy(zt_numpy)}
             z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
             z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
             gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
@@ -401,11 +424,14 @@ class Boomerang(MCMCKernel):
         argmin = optimize.fminbound(minus_rate_of_t, 0, tmax, xtol=1.48e-08, full_output=0, maxfun=100)
         return argmin, -minus_rate_of_t(argmin)
 
-
-    def switchingtime(self, a, b, u=np.random.random()):
+    def switchingtime(self, a, b, u=None):
         # generate switching time for rate of the form max(0, a + b s) + c
         # under the assumptions that b > 0, c > 0
         # u is the random number
+        if u:
+            pass
+        else:
+            u = np.random.rand()
         if (b > 0):
             if (a < 0):
                 return -a / b + self.switchingtime(0.0, b, u)
@@ -433,18 +459,3 @@ class Boomerang(MCMCKernel):
         y_new = y0 * np.cos(t) + w0 * np.sin(t)
         w_new = -y0 * np.sin(t) + w0 * np.cos(t)
         return (y_new, w_new)
-
-#true_coefs = torch.tensor([1., 2.])
-#data = torch.randn(2000, 2)
-#dim = 2
-#labels = dist.Bernoulli(logits=(true_coefs * data).sum(-1)).sample()
-#def model(data):
-     #coefs_mean = torch.zeros(dim)
-     #coefs = pyro.sample('beta', dist.Normal(coefs_mean, torch.ones(2)))
-     #y = pyro.sample('y', dist.Bernoulli(logits=(coefs * data).sum(-1)), obs=labels)
-     #return y
-#boomerang_kernel = Boomerang(model, Sigma=np.array([[3,0.5],[0.5,3]]), refresh_rate = 1.0)
-#from pyro.infer import MCMC
-#mcmc = MCMC(boomerang_kernel, num_samples=1000)
-#mcmc.run(data)
-#print(mcmc.get_samples()['beta'].mean(0))
