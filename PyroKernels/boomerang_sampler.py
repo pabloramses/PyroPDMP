@@ -102,6 +102,8 @@ class Boomerang(MCMCKernel):
         self.total_samp = 0.01
         self.potential_fn = potential_fn
         self.eps = np.finfo(float).eps
+        self.dimensions = None
+        self.key_of_z = None
 
         # Some inputs specific for Boomerang
         self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
@@ -211,8 +213,7 @@ class Boomerang(MCMCKernel):
                 ("prop. of boundary violation",
                  "{:.3f}".format(self._no_boundary_violated / self._no_proposed_switches)),
                 (
-                    "prop. of accepted switches",
-                    "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
+                "prop. of accepted switches", "{:.3f}".format(self._no_accepted_switches / self._no_proposed_switches)),
                 ("prop. of accepted steps", "{:.3f}".format(self._no_accepted_switches / self.total_samp)),
                 ("Switch time proposed", self.dt_switch_proposed),
                 ("Bound", self.bound),
@@ -236,12 +237,16 @@ class Boomerang(MCMCKernel):
             v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
             z_grads, potential_energy = potential_grad(self.potential_fn, z)
             self._cache(z, v, potential_energy, z_grads)
-
+        # print(z_grads)
         # Extract key of z
-        self.key_of_z = list(z.keys())[0]
-        # convert to Numpy array
-        z_numpy, z_grads_numpy = z[self.key_of_z].numpy(), z_grads[self.key_of_z].numpy()
+        if self.key_of_z == None:
+            self.extract_keys_of_z(z)  # extracts the keys of z just the first time it samples
+        if self.dimensions == None:  # only first time
+            self.dimensions = self.dimension_of_components(
+                z)  # collects the dimension of each component of the model (dimension of value of each key)
 
+        z_numpy = self.dict_of_tensors_to_numpy(z)
+        z_grads_numpy = self.dict_of_tensors_to_numpy(z_grads)
         t = 0.0
         # Modified gradU
         updateSkeleton = False
@@ -269,10 +274,10 @@ class Boomerang(MCMCKernel):
                 z_numpy = y + self.z_ref
 
                 # Convert to tensor to save and to compute gradient
-                z = {self.key_of_z: torch.from_numpy(z_numpy)}
+                z = self.numpy_to_dict_of_tensors(z_numpy)
                 z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
                 # convert z_grads_new back to numpy
-                z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
+                z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
 
                 t = t + dt
                 a = a + b * dt
@@ -353,10 +358,10 @@ class Boomerang(MCMCKernel):
                 z_numpy = y + self.z_ref
 
                 # Convert to tensor to save and to compute gradient
-                z = {self.key_of_z: torch.from_numpy(z_numpy)}
+                z = self.numpy_to_dict_of_tensors(z_numpy)
                 z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
-                # convert z_grads_new back to numpy
-                z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
+                # grads_new to numpy
+                z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
                 gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))
                 t = t + dt
                 if not finished and dt_switch_proposed < dt_refresh:
@@ -378,6 +383,7 @@ class Boomerang(MCMCKernel):
                             np.linalg.cholesky(self.Sigma), skewed_grad)
                         updateSkeleton = True
                         finished = True
+                        rebound = True
                         self._no_accepted_switches = self._no_accepted_switches + 1
                     else:
                         updateSkeleton = False
@@ -392,6 +398,7 @@ class Boomerang(MCMCKernel):
                     self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
                     finished = True
+                    rebound = True
                     v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
 
                     # compute new refreshment time
@@ -407,22 +414,65 @@ class Boomerang(MCMCKernel):
 
         return z.copy()
 
+    def extract_keys_of_z(self, z):
+        if len(list(z.keys())) == 1:
+            self.key_of_z = list(z.keys())[0]
+        else:
+            self.key_of_z = list(z.keys())
+
+    def dimension_of_components(self, z):
+        if type(self.key_of_z) == str:
+            dimensions = [1]
+        else:
+            dimensions = [len(z[self.key_of_z[0]])]
+            for j in range(1, len(self.key_of_z)):
+                if z[self.key_of_z[j]].dim() == 0:
+                    dimensions.append(1)
+                else:
+                    dimensions.append(len(z[self.key_of_z[j]]))
+        return dimensions
+
+    def dict_of_tensors_to_numpy(self, z):
+        if len(list(z.keys())) == 1:
+            self.key_of_z = list(z.keys())[0]
+            z_numpy = z[self.key_of_z].numpy()
+        else:
+            self.key_of_z = list(z.keys())
+            z_numpy = z[self.key_of_z[0]].numpy()
+            for j in range(1, len(self.key_of_z)):
+                # convert to Numpy array
+                z_numpy_j = z[self.key_of_z[j]].numpy()
+                z_numpy = np.append(z_numpy, z_numpy_j)
+        return z_numpy
+
+    def numpy_to_dict_of_tensors(self, z_numpy):
+        if type(self.key_of_z) == str:
+            z = {self.key_of_z: torch.from_numpy(z_numpy)}
+            z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
+        else:
+            z = {self.key_of_z[0]: torch.from_numpy(z_numpy[0:self.dimensions[0]])}
+            for j in range(1, len(self.dimensions)):
+                # convert to Numpy array
+                z.update({self.key_of_z[j]: torch.from_numpy(
+                    z_numpy[self.dimensions[j - 1]:self.dimensions[j - 1] + self.dimensions[j]])})
+        return z
+
     def rate_of_t(self, z, v, t):
         zt_numpy, vt = self.EllipticDynamics(t, z, v)
-        zt = {self.key_of_z: torch.from_numpy(zt_numpy)}
+        zt = self.numpy_to_dict_of_tensors(zt_numpy)
         z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
-        z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
-        gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+        z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
+        gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_numpy - self.z_ref))
         ft = np.dot(vt, gradU)
         return np.maximum(0, ft)
 
     def corbella(self, z, v, tmax, check=True):
         def minus_rate_of_t(t):
             zt_numpy, vt = self.EllipticDynamics(t, z, v)
-            zt = {self.key_of_z: torch.from_numpy(zt_numpy)}
+            zt = self.numpy_to_dict_of_tensors(zt_numpy)
             z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
-            z_grads_new_numpy = z_grads_new[self.key_of_z].numpy()
-            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z - self.z_ref))
+            z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
+            gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_numpy - self.z_ref))
             ft = -np.dot(vt, gradU)
             return np.minimum(0, ft)
 
