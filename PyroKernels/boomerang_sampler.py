@@ -6,6 +6,7 @@ import numpy as np
 from collections import OrderedDict
 
 import torch
+import torch.nn.functional as F
 
 import pyro
 import pyro.distributions as dist
@@ -104,6 +105,7 @@ class Boomerang(MCMCKernel):
         self.eps = np.finfo(float).eps
         self.dimensions = None
         self.key_of_z = None
+        self.shapes = None
 
         # Some inputs specific for Boomerang
         self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
@@ -244,6 +246,8 @@ class Boomerang(MCMCKernel):
         if self.dimensions == None:  # only first time
             self.dimensions = self.dimension_of_components(
                 z)  # collects the dimension of each component of the model (dimension of value of each key)
+        if self.shapes == None:
+            self.shapes_of_components(z)
 
         z_numpy = self.dict_of_tensors_to_numpy(z)
         z_grads_numpy = self.dict_of_tensors_to_numpy(z_grads)
@@ -375,7 +379,6 @@ class Boomerang(MCMCKernel):
                         # Should not we raise value error?
                         # raise ValueError("Switching rate exceeds bound.")
 
-                    # simul3 = 0.01
                     if np.random.rand() * simulated_rate <= switch_rate:
                         # obtain new velocity by reflection
                         skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
@@ -429,8 +432,14 @@ class Boomerang(MCMCKernel):
                 if z[self.key_of_z[j]].dim() == 0:
                     dimensions.append(1)
                 else:
-                    dimensions.append(len(z[self.key_of_z[j]]))
+                    dimensions.append(torch.prod(
+                        torch.tensor(z[self.key_of_z[j]].shape)).item())  # very rustic way to get the dimensions
         return dimensions
+
+    def shapes_of_components(self, z):
+        self.shapes = {}
+        for value, key in enumerate(z):
+            self.shapes.update({key: z[key].shape})
 
     def dict_of_tensors_to_numpy(self, z):
         if len(list(z.keys())) == 1:
@@ -446,15 +455,17 @@ class Boomerang(MCMCKernel):
         return z_numpy
 
     def numpy_to_dict_of_tensors(self, z_numpy):
+        limits = np.cumsum(self.dimensions)
         if type(self.key_of_z) == str:
             z = {self.key_of_z: torch.from_numpy(z_numpy)}
             z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
         else:
-            z = {self.key_of_z[0]: torch.from_numpy(z_numpy[0:self.dimensions[0]])}
+            z = {self.key_of_z[0]: torch.from_numpy(z_numpy[0:limits[0]]).reshape(self.shapes[self.key_of_z[0]])}
             for j in range(1, len(self.dimensions)):
                 # convert to Numpy array
-                z.update({self.key_of_z[j]: torch.from_numpy(
-                    z_numpy[self.dimensions[j - 1]:self.dimensions[j - 1] + self.dimensions[j]])})
+                print(torch.from_numpy(z_numpy[limits[j - 1]: limits[j]]))
+                z.update({self.key_of_z[j]: torch.from_numpy(z_numpy[limits[j - 1]: limits[j]]).reshape(
+                    self.shapes[self.key_of_z[j]])})
         return z
 
     def rate_of_t(self, z, v, t):
