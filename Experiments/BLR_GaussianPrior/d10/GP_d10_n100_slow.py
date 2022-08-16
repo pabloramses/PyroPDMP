@@ -116,7 +116,7 @@ for i in range(10):
     predSamp_bps_d10_n100_slow = predictive_samples(postSamp_bps_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_bps_d10_n100_slow_df = pd.DataFrame(postSamp_bps_d10_n100_slow.numpy())
-    postSamp_bps_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/postSamp_bps_d10_n100_slow_run" + str(i) + ".csv")
+    postSamp_bps_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_bps_d10_n100_slow_run" + str(i) + ".csv")
 
     "summary of predictions"
     predMean_bps_d10_n100_slow ,predLower_bps_d10_n100_slow, predUpper_bps_d10_n100_slow = predictive_summary(predSamp_bps_d10_n100_slow, 0.025)
@@ -141,7 +141,7 @@ for i in range(10):
     predSamp_zz_d10_n100_slow = predictive_samples(postSamp_zz_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_zz_d10_n100_slow_df = pd.DataFrame(postSamp_zz_d10_n100_slow.numpy())
-    postSamp_zz_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/postSamp_zz_d10_n100_slow_run" + str(i) + ".csv")
+    postSamp_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_zz_d10_n100_slow_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_zz_d10_n100_slow ,predLower_zz_d10_n100_slow, predUpper_zz_d10_n100_slow = predictive_summary(predSamp_zz_d10_n100_slow, 0.025)
 
@@ -165,7 +165,7 @@ for i in range(10):
     predSamp_hmc_d10_n100_slow = predictive_samples(postSamp_hmc_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_hmc_d10_n100_slow_df = pd.DataFrame(postSamp_hmc_d10_n100_slow.numpy())
-    postSamp_hmc_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/postSamp_hmc_d10_n100_slow_run" + str(i) + ".csv")
+    postSamp_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_hmc_d10_n100_slow_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_hmc_d10_n100_slow ,predLower_hmc_d10_n100_slow, predUpper_hmc_d10_n100_slow = predictive_summary(predSamp_hmc_d10_n100_slow, 0.025)
 
@@ -185,10 +185,10 @@ distances_bk_d10_n100_slow_df = pd.DataFrame(distances_bk_d10_n100_slow)
 convergence_bk_d10_n100_slow_df = pd.DataFrame(convergence_bk_d10_n100_slow)
 
 "to csv bk"
-r2scores_bk_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/r2scores_bk_d10_n100_slow.csv")
-perCorrect_bk_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/perCorrect_bk_d10_n100_slow.csv")
-distances_bk_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/distances_bk_d10_n100_slow.csv")
-convergence_bk_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/convergence_bk_d10_n100_slow.csv")
+r2scores_bk_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/r2scores_bk_d10_n100_slow.csv")
+perCorrect_bk_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/perCorrect_bk_d10_n100_slow.csv")
+distances_bk_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/distances_bk_d10_n100_slow.csv")
+convergence_bk_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/convergence_bk_d10_n100_slow.csv")
 
 "to pandas bps"
 r2scores_bps_d10_n100_slow_df = pd.DataFrame(r2scores_bps_d10_n100_slow)
@@ -196,27 +196,27 @@ perCorrect_bps_d10_n100_slow_df = pd.DataFrame(perCorrect_bps_d10_n100_slow)
 distances_bps_d10_n100_slow_df = pd.DataFrame(distances_bps_d10_n100_slow)
 convergence_bps_d10_n100_slow_df = pd.DataFrame(convergence_bps_d10_n100_slow)
 "to csv bps"
-r2scores_bps_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/r2scores_bps_d10_n100_slow.csv")
-perCorrect_bps_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/perCorrect_bps_d10_n100_slow.csv")
-distances_bps_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/distances_bps_d10_n100_slow.csv")
-convergence_bps_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/convergence_bps_d10_n100_slow.csv")
+r2scores_bps_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/r2scores_bps_d10_n100_slow.csv")
+perCorrect_bps_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/perCorrect_bps_d10_n100_slow.csv")
+distances_bps_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/distances_bps_d10_n100_slow.csv")
+convergence_bps_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/convergence_bps_d10_n100_slow.csv")
 "to pandas zz"
 r2scores_zz_d10_n100_slow_df = pd.DataFrame(r2scores_zz_d10_n100_slow)
 perCorrect_zz_d10_n100_slow_df = pd.DataFrame(perCorrect_zz_d10_n100_slow)
 distances_zz_d10_n100_slow_df = pd.DataFrame(distances_zz_d10_n100_slow)
 convergence_zz_d10_n100_slow_df = pd.DataFrame(convergence_zz_d10_n100_slow)
 "to csv bps"
-r2scores_zz_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/r2scores_zz_d10_n100_slow.csv")
-perCorrect_zz_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/perCorrect_zz_d10_n100_slow.csv")
-distances_zz_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/distances_zz_d10_n100_slow.csv")
-convergence_zz_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/convergence_zz_d10_n100_slow.csv")
+r2scores_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/r2scores_zz_d10_n100_slow.csv")
+perCorrect_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/perCorrect_zz_d10_n100_slow.csv")
+distances_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/distances_zz_d10_n100_slow.csv")
+convergence_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/convergence_zz_d10_n100_slow.csv")
 "to pandas hmc"
 r2scores_hmc_d10_n100_slow_df = pd.DataFrame(r2scores_hmc_d10_n100_slow)
 perCorrect_hmc_d10_n100_slow_df = pd.DataFrame(perCorrect_hmc_d10_n100_slow)
 distances_hmc_d10_n100_slow_df = pd.DataFrame(distances_hmc_d10_n100_slow)
 convergence_hmc_d10_n100_slow_df = pd.DataFrame(convergence_hmc_d10_n100_slow)
 "to csv bps"
-r2scores_hmc_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/r2scores_hmc_d10_n100_slow.csv")
-perCorrect_hmc_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/perCorrect_hmc_d10_n100_slow.csv")
-distances_hmc_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/distances_hmc_d10_n100_slow.csv")
-convergence_hmc_d10_n100_slow_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_slow/convergence_hmc_d10_n100_slow.csv")
+r2scores_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/r2scores_hmc_d10_n100_slow.csv")
+perCorrect_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/perCorrect_hmc_d10_n100_slow.csv")
+distances_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/distances_hmc_d10_n100_slow.csv")
+convergence_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/convergence_hmc_d10_n100_slow.csv")

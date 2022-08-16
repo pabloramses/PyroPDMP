@@ -2,6 +2,7 @@ import math
 import numpy as np
 from collections import OrderedDict
 
+import os
 import torch
 import torch.nn.functional as F
 from pyro.infer import MCMC, NUTS, Predictive
@@ -23,6 +24,8 @@ from Pyro_Boomerang import Boomerang
 from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
+
+PATH = os.path.dirname(__file__)
 
 #True Model
 def model(data):
@@ -90,7 +93,7 @@ for i in range(10):
     predSamp_bk_d10_n100_smed = predictive_samples(postSamp_bk_d10_n100_smed, data_d10_n100)
     "SAVE TO CSV"
     postSamp_bk_d10_n100_smed_df = pd.DataFrame(postSamp_bk_d10_n100_smed.numpy())
-    postSamp_bk_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/postSamp_bk_d10_n100_smed_run"+str(i)+".csv")
+    postSamp_bk_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/postSamp_bk_d10_n100_smed_run"+str(i)+".csv")
     "summary of predictions"
     predMean_bk_d10_n100_smed ,predmeder_bk_d10_n100_smed, predUpper_bk_d10_n100_smed = predictive_summary(predSamp_bk_d10_n100_smed, 0.025)
 
@@ -116,7 +119,7 @@ for i in range(10):
     predSamp_bps_d10_n100_smed = predictive_samples(postSamp_bps_d10_n100_smed, data_d10_n100)
     "SAVE TO CSV"
     postSamp_bps_d10_n100_smed_df = pd.DataFrame(postSamp_bps_d10_n100_smed.numpy())
-    postSamp_bps_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/postSamp_bps_d10_n100_smed_run" + str(i) + ".csv")
+    postSamp_bps_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/postSamp_bps_d10_n100_smed_run" + str(i) + ".csv")
 
     "summary of predictions"
     predMean_bps_d10_n100_smed ,predmeder_bps_d10_n100_smed, predUpper_bps_d10_n100_smed = predictive_summary(predSamp_bps_d10_n100_smed, 0.025)
@@ -141,7 +144,7 @@ for i in range(10):
     predSamp_zz_d10_n100_smed = predictive_samples(postSamp_zz_d10_n100_smed, data_d10_n100)
     "SAVE TO CSV"
     postSamp_zz_d10_n100_smed_df = pd.DataFrame(postSamp_zz_d10_n100_smed.numpy())
-    postSamp_zz_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/postSamp_zz_d10_n100_smed_run" + str(i) + ".csv")
+    postSamp_zz_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/postSamp_zz_d10_n100_smed_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_zz_d10_n100_smed ,predmeder_zz_d10_n100_smed, predUpper_zz_d10_n100_smed = predictive_summary(predSamp_zz_d10_n100_smed, 0.025)
 
@@ -165,7 +168,7 @@ for i in range(10):
     predSamp_hmc_d10_n100_smed = predictive_samples(postSamp_hmc_d10_n100_smed, data_d10_n100)
     "SAVE TO CSV"
     postSamp_hmc_d10_n100_smed_df = pd.DataFrame(postSamp_hmc_d10_n100_smed.numpy())
-    postSamp_hmc_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/postSamp_hmc_d10_n100_smed_run" + str(i) + ".csv")
+    postSamp_hmc_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/postSamp_hmc_d10_n100_smed_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_hmc_d10_n100_smed ,predmeder_hmc_d10_n100_smed, predUpper_hmc_d10_n100_smed = predictive_summary(predSamp_hmc_d10_n100_smed, 0.025)
 
@@ -185,10 +188,10 @@ distances_bk_d10_n100_smed_df = pd.DataFrame(distances_bk_d10_n100_smed)
 convergence_bk_d10_n100_smed_df = pd.DataFrame(convergence_bk_d10_n100_smed)
 
 "to csv bk"
-r2scores_bk_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/r2scores_bk_d10_n100_smed.csv")
-perCorrect_bk_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/perCorrect_bk_d10_n100_smed.csv")
-distances_bk_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/distances_bk_d10_n100_smed.csv")
-convergence_bk_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/convergence_bk_d10_n100_smed.csv")
+r2scores_bk_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/r2scores_bk_d10_n100_smed.csv")
+perCorrect_bk_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/perCorrect_bk_d10_n100_smed.csv")
+distances_bk_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/distances_bk_d10_n100_smed.csv")
+convergence_bk_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/convergence_bk_d10_n100_smed.csv")
 
 "to pandas bps"
 r2scores_bps_d10_n100_smed_df = pd.DataFrame(r2scores_bps_d10_n100_smed)
@@ -196,27 +199,27 @@ perCorrect_bps_d10_n100_smed_df = pd.DataFrame(perCorrect_bps_d10_n100_smed)
 distances_bps_d10_n100_smed_df = pd.DataFrame(distances_bps_d10_n100_smed)
 convergence_bps_d10_n100_smed_df = pd.DataFrame(convergence_bps_d10_n100_smed)
 "to csv bps"
-r2scores_bps_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/r2scores_bps_d10_n100_smed.csv")
-perCorrect_bps_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/perCorrect_bps_d10_n100_smed.csv")
-distances_bps_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/distances_bps_d10_n100_smed.csv")
-convergence_bps_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/convergence_bps_d10_n100_smed.csv")
+r2scores_bps_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/r2scores_bps_d10_n100_smed.csv")
+perCorrect_bps_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/perCorrect_bps_d10_n100_smed.csv")
+distances_bps_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/distances_bps_d10_n100_smed.csv")
+convergence_bps_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/convergence_bps_d10_n100_smed.csv")
 "to pandas zz"
 r2scores_zz_d10_n100_smed_df = pd.DataFrame(r2scores_zz_d10_n100_smed)
 perCorrect_zz_d10_n100_smed_df = pd.DataFrame(perCorrect_zz_d10_n100_smed)
 distances_zz_d10_n100_smed_df = pd.DataFrame(distances_zz_d10_n100_smed)
 convergence_zz_d10_n100_smed_df = pd.DataFrame(convergence_zz_d10_n100_smed)
 "to csv bps"
-r2scores_zz_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/r2scores_zz_d10_n100_smed.csv")
-perCorrect_zz_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/perCorrect_zz_d10_n100_smed.csv")
-distances_zz_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/distances_zz_d10_n100_smed.csv")
-convergence_zz_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/convergence_zz_d10_n100_smed.csv")
+r2scores_zz_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/r2scores_zz_d10_n100_smed.csv")
+perCorrect_zz_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/perCorrect_zz_d10_n100_smed.csv")
+distances_zz_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/distances_zz_d10_n100_smed.csv")
+convergence_zz_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/convergence_zz_d10_n100_smed.csv")
 "to pandas hmc"
 r2scores_hmc_d10_n100_smed_df = pd.DataFrame(r2scores_hmc_d10_n100_smed)
 perCorrect_hmc_d10_n100_smed_df = pd.DataFrame(perCorrect_hmc_d10_n100_smed)
 distances_hmc_d10_n100_smed_df = pd.DataFrame(distances_hmc_d10_n100_smed)
 convergence_hmc_d10_n100_smed_df = pd.DataFrame(convergence_hmc_d10_n100_smed)
 "to csv bps"
-r2scores_hmc_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/r2scores_hmc_d10_n100_smed.csv")
-perCorrect_hmc_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/perCorrect_hmc_d10_n100_smed.csv")
-distances_hmc_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/distances_hmc_d10_n100_smed.csv")
-convergence_hmc_d10_n100_smed_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n100_smed/convergence_hmc_d10_n100_smed.csv")
+r2scores_hmc_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/r2scores_hmc_d10_n100_smed.csv")
+perCorrect_hmc_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/perCorrect_hmc_d10_n100_smed.csv")
+distances_hmc_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/distances_hmc_d10_n100_smed.csv")
+convergence_hmc_d10_n100_smed_df.to_csv(PATH + "/results/d10_n100_smed/convergence_hmc_d10_n100_smed.csv")

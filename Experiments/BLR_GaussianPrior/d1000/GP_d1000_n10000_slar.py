@@ -23,7 +23,9 @@ from Pyro_Boomerang import Boomerang
 from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
+import os
 
+PATH = os.path.dirname(__file__)
 #True Model
 def model(data):
     coefs_mean = torch.zeros(dim)
@@ -99,7 +101,7 @@ for i in range(10):
     predSamp_bk_d1000_n10000_slar = predictive_samples(postSamp_bk_d1000_n10000_slar, data_d1000_n10000)
     "SAVE TO CSV"
     postSamp_bk_d1000_n10000_slar_df = pd.DataFrame(postSamp_bk_d1000_n10000_slar.numpy())
-    postSamp_bk_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/postSamp_bk_d1000_n10000_slar_run"+str(i)+".csv")
+    postSamp_bk_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_bk_d1000_n10000_slar_run"+str(i)+".csv")
     "summary of predictions"
     predMean_bk_d1000_n10000_slar ,predLower_bk_d1000_n10000_slar, predUpper_bk_d1000_n10000_slar = predictive_summary(predSamp_bk_d1000_n10000_slar, 0.025)
     print("bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_slar))
@@ -127,7 +129,7 @@ for i in range(10):
     predSamp_bps_d1000_n10000_slar = predictive_samples(postSamp_bps_d1000_n10000_slar, data_d1000_n10000)
     "SAVE TO CSV"
     postSamp_bps_d1000_n10000_slar_df = pd.DataFrame(postSamp_bps_d1000_n10000_slar.numpy())
-    postSamp_bps_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/postSamp_bps_d1000_n10000_slar_run" + str(i) + ".csv")
+    postSamp_bps_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_bps_d1000_n10000_slar_run" + str(i) + ".csv")
 
     "summary of predictions"
     predMean_bps_d1000_n10000_slar ,predLower_bps_d1000_n10000_slar, predUpper_bps_d1000_n10000_slar = predictive_summary(predSamp_bps_d1000_n10000_slar, 0.025)
@@ -154,7 +156,7 @@ for i in range(10):
     predSamp_zz_d1000_n10000_slar = predictive_samples(postSamp_zz_d1000_n10000_slar, data_d1000_n10000)
     "SAVE TO CSV"
     postSamp_zz_d1000_n10000_slar_df = pd.DataFrame(postSamp_zz_d1000_n10000_slar.numpy())
-    postSamp_zz_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/postSamp_zz_d1000_n10000_slar_run" + str(i) + ".csv")
+    postSamp_zz_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_zz_d1000_n10000_slar_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_zz_d1000_n10000_slar ,predLower_zz_d1000_n10000_slar, predUpper_zz_d1000_n10000_slar = predictive_summary(predSamp_zz_d1000_n10000_slar, 0.025)
     print("zz r2", r2_score(labels.squeeze(), predMean_zz_d1000_n10000_slar))
@@ -180,7 +182,7 @@ for i in range(10):
     predSamp_hmc_d1000_n10000_slar = predictive_samples(postSamp_hmc_d1000_n10000_slar, data_d1000_n10000)
     "SAVE TO CSV"
     postSamp_hmc_d1000_n10000_slar_df = pd.DataFrame(postSamp_hmc_d1000_n10000_slar.numpy())
-    postSamp_hmc_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/postSamp_hmc_d1000_n10000_slar_run" + str(i) + ".csv")
+    postSamp_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_hmc_d1000_n10000_slar_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_hmc_d1000_n10000_slar ,predLower_hmc_d1000_n10000_slar, predUpper_hmc_d1000_n10000_slar = predictive_summary(predSamp_hmc_d1000_n10000_slar, 0.025)
     print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d1000_n10000_slar))
@@ -199,33 +201,33 @@ r2scores_bk_d1000_n10000_slar_df = pd.DataFrame(r2scores_bk_d1000_n10000_slar)
 perCorrect_bk_d1000_n10000_slar_df = pd.DataFrame(perCorrect_bk_d1000_n10000_slar)
 distances_bk_d1000_n10000_slar_df = pd.DataFrame(distances_bk_d1000_n10000_slar)
 "to csv bps"
-r2scores_bk_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/r2scores_bk_d1000_n10000_slar.csv")
-perCorrect_bk_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/perCorrect_bk_d1000_n10000_slar.csv")
-distances_bk_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/distances_bk_d1000_n10000_slar.csv")
+r2scores_bk_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/r2scores_bk_d1000_n10000_slar.csv")
+perCorrect_bk_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/perCorrect_bk_d1000_n10000_slar.csv")
+distances_bk_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/distances_bk_d1000_n10000_slar.csv")
 
 "to pandas bps"
 r2scores_bps_d1000_n10000_slar_df = pd.DataFrame(r2scores_bps_d1000_n10000_slar)
 perCorrect_bps_d1000_n10000_slar_df = pd.DataFrame(perCorrect_bps_d1000_n10000_slar)
 distances_bps_d1000_n10000_slar_df = pd.DataFrame(distances_bps_d1000_n10000_slar)
 "to csv bps"
-r2scores_bps_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/r2scores_bps_d1000_n10000_slar.csv")
-perCorrect_bps_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/perCorrect_bps_d1000_n10000_slar.csv")
-distances_bps_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/distances_bps_d1000_n10000_slar.csv")
+r2scores_bps_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/r2scores_bps_d1000_n10000_slar.csv")
+perCorrect_bps_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/perCorrect_bps_d1000_n10000_slar.csv")
+distances_bps_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/distances_bps_d1000_n10000_slar.csv")
 
 "to pandas zz"
 r2scores_zz_d1000_n10000_slar_df = pd.DataFrame(r2scores_zz_d1000_n10000_slar)
 perCorrect_zz_d1000_n10000_slar_df = pd.DataFrame(perCorrect_zz_d1000_n10000_slar)
 distances_zz_d1000_n10000_slar_df = pd.DataFrame(distances_zz_d1000_n10000_slar)
 "to csv bps"
-r2scores_zz_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/r2scores_zz_d1000_n10000_slar.csv")
-perCorrect_zz_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/perCorrect_zz_d1000_n10000_slar.csv")
-distances_zz_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/distances_zz_d1000_n10000_slar.csv")
+r2scores_zz_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/r2scores_zz_d1000_n10000_slar.csv")
+perCorrect_zz_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/perCorrect_zz_d1000_n10000_slar.csv")
+distances_zz_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/distances_zz_d1000_n10000_slar.csv")
 
 "to pandas hmc"
 r2scores_hmc_d1000_n10000_slar_df = pd.DataFrame(r2scores_hmc_d1000_n10000_slar)
 perCorrect_hmc_d1000_n10000_slar_df = pd.DataFrame(perCorrect_hmc_d1000_n10000_slar)
 distances_hmc_d1000_n10000_slar_df = pd.DataFrame(distances_hmc_d1000_n10000_slar)
 "to csv bps"
-r2scores_hmc_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/r2scores_hmc_d1000_n10000_slar.csv")
-perCorrect_hmc_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/perCorrect_hmc_d1000_n10000_slar.csv")
-distances_hmc_d1000_n10000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d1000_n10000_slar/distances_hmc_d1000_n10000_slar.csv")
+r2scores_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/r2scores_hmc_d1000_n10000_slar.csv")
+perCorrect_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/perCorrect_hmc_d1000_n10000_slar.csv")
+distances_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/distances_hmc_d1000_n10000_slar.csv")
