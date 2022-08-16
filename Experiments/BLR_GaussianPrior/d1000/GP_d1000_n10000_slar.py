@@ -38,8 +38,8 @@ def model(data):
 sample_size = 10000
 dim = 1000
 
-num_samples = 10000
-warmup_steps = 10000
+num_samples = 1000
+warmup_steps = 1000
 
 
 
@@ -115,7 +115,32 @@ for i in range(10):
     "Convergences"
     #k_bk_d1000_n10000_slar = kernel_Stein_Discrepancies(bk_d1000_n10000_slar, postSamp_bk_d1000_n10000_slar)
     #convergence_bk_d1000_n10000_slar.append(k_bk_d1000_n10000_slar)
+    #######################################HMC########################################################
+    "DEFINITION OF SAMPLER"
+    hmc_d1000_n10000_slar = NUTS(model)
+    mcmc_hmc_d1000_n10000_slar = MCMC(hmc_d1000_n10000_slar, num_samples=num_samples, warmup_steps=warmup_steps)
+    mcmc_hmc_d1000_n10000_slar.run(data_d1000_n10000)
+    "posterior distribution"
+    postMean_hmc_d1000_n10000_slar = mcmc_hmc_d1000_n10000_slar.get_samples()['beta'].mean(0)
+    "get samples from predictive distribution"
+    postSamp_hmc_d1000_n10000_slar = mcmc_hmc_d1000_n10000_slar.get_samples()['beta']
+    print("hmc distance", torch.norm(postMean_hmc_d1000_n10000_slar - truePost.transpose(0, -1)))
+    predSamp_hmc_d1000_n10000_slar = predictive_samples(postSamp_hmc_d1000_n10000_slar, data_d1000_n10000)
+    "SAVE TO CSV"
+    postSamp_hmc_d1000_n10000_slar_df = pd.DataFrame(postSamp_hmc_d1000_n10000_slar.numpy())
+    postSamp_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_hmc_d1000_n10000_slar_run" + str(i) + ".csv")
+    "summary of predictions"
+    predMean_hmc_d1000_n10000_slar ,predLower_hmc_d1000_n10000_slar, predUpper_hmc_d1000_n10000_slar = predictive_summary(predSamp_hmc_d1000_n10000_slar, 0.025)
+    print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d1000_n10000_slar))
+    print("hmc percentage", percentage_correct(predLower_hmc_d1000_n10000_slar,predUpper_hmc_d1000_n10000_slar,true_y_d1000_n10000))
+    "r2 score"
+    r2scores_hmc_d1000_n10000_slar.append(r2_score(labels.squeeze(), predMean_hmc_d1000_n10000_slar))
+    perCorrect_hmc_d1000_n10000_slar.append(percentage_correct(predLower_hmc_d1000_n10000_slar,predUpper_hmc_d1000_n10000_slar,true_y_d1000_n10000))
+    distances_hmc_d1000_n10000_slar.append(torch.norm(postMean_hmc_d1000_n10000_slar - truePost.transpose(0,-1)))
 
+    "Convergences"
+    #ksd_hmc_d1000_n10000_slar = kernel_Stein_Discrepancies(hmc_d1000_n10000_slar, postSamp_hmc_d1000_n10000_slar)
+    #convergence_hmc_d1000_n10000_slar.append(ksd_hmc_d1000_n10000_slar)
     #######################################BPS########################################################
     "DEFINITION OF SAMPLER"
     bps_d1000_n10000_slar = BPS(model, dimension=dim, hessian_bound = hessian_bound, refresh_rate = 10, ihpp_sampler = 'Exact')
@@ -169,32 +194,7 @@ for i in range(10):
     "Convergences"
     #ksd_zz_d1000_n10000_slar = kernel_Stein_Discrepancies(zz_d1000_n10000_slar, postSamp_zz_d1000_n10000_slar)
     #convergence_zz_d1000_n10000_slar.append(ksd_zz_d1000_n10000_slar)
-    #######################################HMC########################################################
-    "DEFINITION OF SAMPLER"
-    hmc_d1000_n10000_slar = NUTS(model)
-    mcmc_hmc_d1000_n10000_slar = MCMC(hmc_d1000_n10000_slar, num_samples=num_samples, warmup_steps=warmup_steps)
-    mcmc_hmc_d1000_n10000_slar.run(data_d1000_n10000)
-    "posterior distribution"
-    postMean_hmc_d1000_n10000_slar = mcmc_hmc_d1000_n10000_slar.get_samples()['beta'].mean(0)
-    "get samples from predictive distribution"
-    postSamp_hmc_d1000_n10000_slar = mcmc_hmc_d1000_n10000_slar.get_samples()['beta']
-    print("hmc distance", torch.norm(postMean_hmc_d1000_n10000_slar - truePost.transpose(0, -1)))
-    predSamp_hmc_d1000_n10000_slar = predictive_samples(postSamp_hmc_d1000_n10000_slar, data_d1000_n10000)
-    "SAVE TO CSV"
-    postSamp_hmc_d1000_n10000_slar_df = pd.DataFrame(postSamp_hmc_d1000_n10000_slar.numpy())
-    postSamp_hmc_d1000_n10000_slar_df.to_csv(PATH + "/results/d1000_n10000_slar/postSamp_hmc_d1000_n10000_slar_run" + str(i) + ".csv")
-    "summary of predictions"
-    predMean_hmc_d1000_n10000_slar ,predLower_hmc_d1000_n10000_slar, predUpper_hmc_d1000_n10000_slar = predictive_summary(predSamp_hmc_d1000_n10000_slar, 0.025)
-    print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d1000_n10000_slar))
-    print("hmc percentage", percentage_correct(predLower_hmc_d1000_n10000_slar,predUpper_hmc_d1000_n10000_slar,true_y_d1000_n10000))
-    "r2 score"
-    r2scores_hmc_d1000_n10000_slar.append(r2_score(labels.squeeze(), predMean_hmc_d1000_n10000_slar))
-    perCorrect_hmc_d1000_n10000_slar.append(percentage_correct(predLower_hmc_d1000_n10000_slar,predUpper_hmc_d1000_n10000_slar,true_y_d1000_n10000))
-    distances_hmc_d1000_n10000_slar.append(torch.norm(postMean_hmc_d1000_n10000_slar - truePost.transpose(0,-1)))
 
-    "Convergences"
-    #ksd_hmc_d1000_n10000_slar = kernel_Stein_Discrepancies(hmc_d1000_n10000_slar, postSamp_hmc_d1000_n10000_slar)
-    #convergence_hmc_d1000_n10000_slar.append(ksd_hmc_d1000_n10000_slar)
 
 "to pandas bk"
 r2scores_bk_d1000_n10000_slar_df = pd.DataFrame(r2scores_bk_d1000_n10000_slar)
