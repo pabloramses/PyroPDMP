@@ -70,7 +70,7 @@ convergence_zz_d1000_n10000_smed = []
 
 
 
-mu_betas = torch.randint(-3,3, size=(1,dim))[0]*1.0
+mu_betas = torch.randint(0,1, size=(1,dim))[0]*1.0
 true_coefs_10 = torch.normal(mean=mu_betas, std=torch.ones(dim))
 
 "10 SAMPLES"
@@ -88,36 +88,36 @@ errors = y_d1000_n10000_smed.transpose(0,-1) - torch.matmul(data_d1000_n10000,to
 sigma = torch.sqrt(torch.mean(errors**2)) #MLE estimation of noise
 labels = y_d1000_n10000_smed
 truePost = torch.matmul(torch.inverse(torch.eye(dim) + (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1),data_d1000_n10000)) , (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), labels.transpose(0,-1)))
-#################################BOOMERANG##################################
+#################################5############################################
 "BOUND ON HESSIAN"
-Target_sigma_inv = torch.eye(dim) + (1/sigma_med**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), data_d1000_n10000)
+Target_sigma_inv = torch.eye(dim) + (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), data_d1000_n10000)
 hessian_bound = torch.linalg.matrix_norm(Target_sigma_inv).item()
 "REFERENCE MEASURE TUNING"
 Sigma_ref = torch.eye(dim)
 "DEFINITION OF SAMPLER"
-bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 25, ihpp_sampler = 'Exact')
+bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 5, ihpp_sampler = 'Exact')
 mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
 mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
 "posterior distribution"
 postMean_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta'].mean(0)
 "get samples from predictive distribution"
 postSamp_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta']
-print("25 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+print("5 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
 "SAVE TO CSV"
 postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
-postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run"+str(i)+".csv")
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run_5.csv")
 "summary of predictions"
 predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
-print("25 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
-print("25 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+print("5 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+print("5 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
 
 "Scores"
 r2scores_bk_d1000_n10000_smed.append(r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
 perCorrect_bk_d1000_n10000_smed.append(percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
 distances_bk_d1000_n10000_smed.append(torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 
-
+##############################################10################################################################################
 bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 10, ihpp_sampler = 'Exact')
 mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
 mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
@@ -129,7 +129,7 @@ print("10 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.tran
 predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
 "SAVE TO CSV"
 postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
-postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run"+str(i)+".csv")
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run_10.csv")
 "summary of predictions"
 predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
 print("10 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
@@ -140,18 +140,27 @@ r2scores_bk_d1000_n10000_smed.append(r2_score(labels.squeeze(), predMean_bk_d100
 perCorrect_bk_d1000_n10000_smed.append(percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
 distances_bk_d1000_n10000_smed.append(torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 
-bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 20, ihpp_sampler = 'Exact')
+r2scores_bk_d1000_n10000_smed_df = pd.DataFrame(r2scores_bk_d1000_n10000_smed)
+perCorrect_bk_d1000_n10000_smed_df = pd.DataFrame(perCorrect_bk_d1000_n10000_smed)
+distances_bk_d1000_n10000_smed_df = pd.DataFrame(distances_bk_d1000_n10000_smed)
+r2scores_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/r2scores_bk_d1000_n10000_smed_10.csv")
+perCorrect_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/perCorrect_bk_d1000_n10000_smed_10.csv")
+distances_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/distances_bk_d1000_n10000_smed_10.csv")
+
+
+###################################################15###############################################################################
+bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 15, ihpp_sampler = 'Exact')
 mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
 mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
 "posterior distribution"
 postMean_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta'].mean(0)
 "get samples from predictive distribution"
 postSamp_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta']
-print("20 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+print("15 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
 "SAVE TO CSV"
 postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
-postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run"+str(i)+".csv")
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run_15.csv")
 "summary of predictions"
 predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
 print("20 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
@@ -169,26 +178,76 @@ mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
 postMean_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta'].mean(0)
 "get samples from predictive distribution"
 postSamp_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta']
-print("5 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+print("15 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
 "SAVE TO CSV"
 postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
-postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run"+str(i)+".csv")
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run_15.csv")
 "summary of predictions"
 predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
-print("5 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
-print("5 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+print("15 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+print("15 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
 
 "Scores"
 r2scores_bk_d1000_n10000_smed.append(r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
 perCorrect_bk_d1000_n10000_smed.append(percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
 distances_bk_d1000_n10000_smed.append(torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
 
-"to pandas bk"
 r2scores_bk_d1000_n10000_smed_df = pd.DataFrame(r2scores_bk_d1000_n10000_smed)
 perCorrect_bk_d1000_n10000_smed_df = pd.DataFrame(perCorrect_bk_d1000_n10000_smed)
 distances_bk_d1000_n10000_smed_df = pd.DataFrame(distances_bk_d1000_n10000_smed)
-"to csv bps"
-r2scores_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/r2scores_bk_d1000_n10000_smed.csv")
-perCorrect_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/perCorrect_bk_d1000_n10000_smed.csv")
-distances_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/distances_bk_d1000_n10000_smed.csv")
+r2scores_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/r2scores_bk_d1000_n10000_smed_15.csv")
+perCorrect_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/perCorrect_bk_d1000_n10000_smed_15.csv")
+distances_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/distances_bk_d1000_n10000_smed_15.csv")
+
+###################################################20###############################################################################
+bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 20, ihpp_sampler = 'Exact')
+mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
+mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
+"posterior distribution"
+postMean_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta'].mean(0)
+"get samples from predictive distribution"
+postSamp_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta']
+print("20 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
+"SAVE TO CSV"
+postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run.csv")
+"summary of predictions"
+predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
+print("20 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+print("20 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+
+"Scores"
+r2scores_bk_d1000_n10000_smed.append(r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+perCorrect_bk_d1000_n10000_smed.append(percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+distances_bk_d1000_n10000_smed.append(torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+
+bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 5, ihpp_sampler = 'Exact')
+mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
+mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
+"posterior distribution"
+postMean_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta'].mean(0)
+"get samples from predictive distribution"
+postSamp_bk_d1000_n10000_smed = mcmc_bk_d1000_n10000_smed.get_samples()['beta']
+print("20 bk distance", torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+predSamp_bk_d1000_n10000_smed = predictive_samples(postSamp_bk_d1000_n10000_smed, data_d1000_n10000)
+"SAVE TO CSV"
+postSamp_bk_d1000_n10000_smed_df = pd.DataFrame(postSamp_bk_d1000_n10000_smed.numpy())
+postSamp_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/postSamp_bk_d1000_n10000_smed_run_20.csv")
+"summary of predictions"
+predMean_bk_d1000_n10000_smed ,predLower_bk_d1000_n10000_smed, predUpper_bk_d1000_n10000_smed = predictive_summary(predSamp_bk_d1000_n10000_smed, 0.025)
+print("20 bk r2", r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+print("20 bk percentage", percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+
+"Scores"
+r2scores_bk_d1000_n10000_smed.append(r2_score(labels.squeeze(), predMean_bk_d1000_n10000_smed))
+perCorrect_bk_d1000_n10000_smed.append(percentage_correct(predLower_bk_d1000_n10000_smed,predUpper_bk_d1000_n10000_smed,true_y_d1000_n10000))
+distances_bk_d1000_n10000_smed.append(torch.norm(postMean_bk_d1000_n10000_smed - truePost.transpose(0,-1)))
+
+r2scores_bk_d1000_n10000_smed_df = pd.DataFrame(r2scores_bk_d1000_n10000_smed)
+perCorrect_bk_d1000_n10000_smed_df = pd.DataFrame(perCorrect_bk_d1000_n10000_smed)
+distances_bk_d1000_n10000_smed_df = pd.DataFrame(distances_bk_d1000_n10000_smed)
+r2scores_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/r2scores_bk_d1000_n10000_smed_20.csv")
+perCorrect_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/perCorrect_bk_d1000_n10000_smed_20.csv")
+distances_bk_d1000_n10000_smed_df.to_csv(PATH + "/results/d1000_n10000_smed/distances_bk_d1000_n10000_smed_20.csv")
