@@ -37,11 +37,11 @@ def model(data):
     return y
 
 
-sample_size = 10000
-dim = 1000
+sample_size = 1000
+dim = 10
 
-num_samples = 1000
-warmup_steps = 1000
+num_samples = 5000
+warmup_steps = 5000
 
 
 
@@ -76,6 +76,7 @@ for i in range(10):
     "Low noise SNR = 100"
     SNR = 1000
     sigma_low = true_y_d1000_n10000.var(0) / SNR
+    print(sigma_low)
     y_d1000_n10000_slow = true_y_d1000_n10000 + torch.normal(0, sigma_low, size = (1, sample_size))
 
 
@@ -92,6 +93,7 @@ for i in range(10):
     Sigma_ref = torch.eye(dim)
     "DEFINITION OF SAMPLER"
     bk_d1000_n10000_slow = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 10, ihpp_sampler = 'Exact')
+    print(1)
     mcmc_bk_d1000_n10000_slow = MCMC(bk_d1000_n10000_slow, num_samples=num_samples, warmup_steps=warmup_steps)
     mcmc_bk_d1000_n10000_slow.run(data_d1000_n10000)
     "posterior distribution"

@@ -113,8 +113,9 @@ for i in range(10):
     distances_bk_d100_n1000_slar.append(torch.norm(postMean_bk_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    #k_bk_d100_n1000_slar = kernel_Stein_Discrepancies(bk_d100_n1000_slar, postSamp_bk_d100_n1000_slar)
-    #convergence_bk_d100_n1000_slar.append(k_bk_d100_n1000_slar)
+    k_bk_d100_n1000_slar = KSD(bk_d100_n1000_slar, postSamp_bk_d100_n1000_slar[-1000:,:])
+    convergence_bk_d100_n1000_slar.append(k_bk_d100_n1000_slar)
+    print("bk convergence", k_bk_d100_n1000_slar)
 
     #######################################BPS########################################################
     "DEFINITION OF SAMPLER"
@@ -141,8 +142,9 @@ for i in range(10):
     distances_bps_d100_n1000_slar.append(torch.norm(postMean_bps_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_bps_d100_n1000_slar = kernel_Stein_Discrepancies(bps_d100_n1000_slar, postSamp_bps_d100_n1000_slar)
-    #convergence_bps_d100_n1000_slar.append(ksd_bps_d100_n1000_slar)
+    ksd_bps_d100_n1000_slar = kernel_Stein_Discrepancies(bps_d100_n1000_slar, postSamp_bps_d100_n1000_slar[-1000:,:])
+    convergence_bps_d100_n1000_slar.append(ksd_bps_d100_n1000_slar)
+    print("bps convergence", ksd_bps_d100_n1000_slar)
     #######################################ZZ########################################################
     "DEFINITION OF SAMPLER"
     zz_d100_n1000_slar = ZZ(model, dimension=dim, Q = Target_sigma_inv, excess_rate = 1, ihpp_sampler = 'Exact')
@@ -167,8 +169,9 @@ for i in range(10):
     distances_zz_d100_n1000_slar.append(torch.norm(postMean_zz_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_zz_d100_n1000_slar = kernel_Stein_Discrepancies(zz_d100_n1000_slar, postSamp_zz_d100_n1000_slar)
-    #convergence_zz_d100_n1000_slar.append(ksd_zz_d100_n1000_slar)
+    ksd_zz_d100_n1000_slar = KSD(zz_d100_n1000_slar, postSamp_zz_d100_n1000_slar[-1000:,:])
+    convergence_zz_d100_n1000_slar.append(ksd_zz_d100_n1000_slar)
+    print("zz convergence", ksd_zz_d100_n1000_slar)
     #######################################HMC########################################################
     "DEFINITION OF SAMPLER"
     hmc_d100_n1000_slar = NUTS(model)
@@ -193,41 +196,49 @@ for i in range(10):
     distances_hmc_d100_n1000_slar.append(torch.norm(postMean_hmc_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_hmc_d100_n1000_slar = kernel_Stein_Discrepancies(hmc_d100_n1000_slar, postSamp_hmc_d100_n1000_slar)
-    #convergence_hmc_d100_n1000_slar.append(ksd_hmc_d100_n1000_slar)
-
+    ksd_hmc_d100_n1000_slar = kernel_Stein_Discrepancies(hmc_d100_n1000_slar, postSamp_hmc_d100_n1000_slar[-1000:,:])
+    convergence_hmc_d100_n1000_slar.append(ksd_hmc_d100_n1000_slar)
+    print("hmc convergence", ksd_hmc_d100_n1000_slar)
 "to pandas bk"
 r2scores_bk_d100_n1000_slar_df = pd.DataFrame(r2scores_bk_d100_n1000_slar)
 perCorrect_bk_d100_n1000_slar_df = pd.DataFrame(perCorrect_bk_d100_n1000_slar)
 distances_bk_d100_n1000_slar_df = pd.DataFrame(distances_bk_d100_n1000_slar)
+convergence_bk_d100_n1000_slar_df = pd.DataFrame(convergence_bk_d100_n1000_slar)
 "to csv bps"
 r2scores_bk_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/r2scores_bk_d100_n1000_slar.csv")
 perCorrect_bk_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/perCorrect_bk_d100_n1000_slar.csv")
 distances_bk_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/distances_bk_d100_n1000_slar.csv")
+convergence_bk_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bk_d100_n1000_slar.csv")
 
 "to pandas bps"
 r2scores_bps_d100_n1000_slar_df = pd.DataFrame(r2scores_bps_d100_n1000_slar)
 perCorrect_bps_d100_n1000_slar_df = pd.DataFrame(perCorrect_bps_d100_n1000_slar)
 distances_bps_d100_n1000_slar_df = pd.DataFrame(distances_bps_d100_n1000_slar)
+convergence_bps_d100_n1000_slar_df = pd.DataFrame(convergence_bps_d100_n1000_slar)
 "to csv bps"
-r2scores_bps_d100_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d100_n1000_slar/r2scores_bps_d100_n1000_slar.csv")
-perCorrect_bps_d100_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d100_n1000_slar/perCorrect_bps_d100_n1000_slar.csv")
-distances_bps_d100_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d100_n1000_slar/distances_bps_d100_n1000_slar.csv")
+r2scores_bps_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/r2scores_bps_d100_n1000_slar.csv")
+perCorrect_bps_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/perCorrect_bps_d100_n1000_slar.csv")
+distances_bps_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/distances_bps_d100_n1000_slar.csv")
+convergence_bps_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bps_d100_n1000_slar.csv")
 
 "to pandas zz"
 r2scores_zz_d100_n1000_slar_df = pd.DataFrame(r2scores_zz_d100_n1000_slar)
 perCorrect_zz_d100_n1000_slar_df = pd.DataFrame(perCorrect_zz_d100_n1000_slar)
 distances_zz_d100_n1000_slar_df = pd.DataFrame(distances_zz_d100_n1000_slar)
+convergence_zz_d100_n1000_slar_df = pd.DataFrame(convergence_zz_d100_n1000_slar)
 "to csv bps"
 r2scores_zz_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/r2scores_zz_d100_n1000_slar.csv")
 perCorrect_zz_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/perCorrect_zz_d100_n1000_slar.csv")
 distances_zz_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/distances_zz_d100_n1000_slar.csv")
+convergence_zz_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_zz_d100_n1000_slar.csv")
 
 "to pandas hmc"
 r2scores_hmc_d100_n1000_slar_df = pd.DataFrame(r2scores_hmc_d100_n1000_slar)
 perCorrect_hmc_d100_n1000_slar_df = pd.DataFrame(perCorrect_hmc_d100_n1000_slar)
 distances_hmc_d100_n1000_slar_df = pd.DataFrame(distances_hmc_d100_n1000_slar)
+convergence_hmc_d100_n1000_slar_df = pd.DataFrame(convergence_hmc_d100_n1000_slar)
 "to csv bps"
 r2scores_hmc_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/r2scores_hmc_d100_n1000_slar.csv")
 perCorrect_hmc_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/perCorrect_hmc_d100_n1000_slar.csv")
 distances_hmc_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slar/distances_hmc_d100_n1000_slar.csv")
+convergence_hmc_d100_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_hmc_d100_n1000_slar.csv")

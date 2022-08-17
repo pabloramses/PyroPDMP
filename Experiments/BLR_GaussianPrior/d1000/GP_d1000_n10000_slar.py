@@ -85,7 +85,7 @@ for i in range(10):
     truePost = torch.matmul(torch.inverse(torch.eye(dim) + (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1),data_d1000_n10000)) , (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), labels.transpose(0,-1)))
     #################################BOOMERANG##################################
     "BOUND ON HESSIAN"
-    Target_sigma_inv = torch.eye(dim) + (1/sigma_lar**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), data_d1000_n10000)
+    Target_sigma_inv = torch.eye(dim) + (1/sigma**2) * torch.matmul(data_d1000_n10000.transpose(0,-1), data_d1000_n10000)
     hessian_bound = torch.linalg.matrix_norm(Target_sigma_inv).item()
     "REFERENCE MEASURE TUNING"
     Sigma_ref = torch.eye(dim)

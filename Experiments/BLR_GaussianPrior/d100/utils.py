@@ -77,13 +77,14 @@ def kernel_Stein_Discrepancies(mcmc_kernel, sample):
       for i in range(K):
         theta = sample[i]
         grad_u_d = grads[i][d]
-        for j in range(K):
+        for j in range(1, K):
           theta_prime = sample[j]
           grad_u_d_prime = grads[j][d]
           grad_kernel_d = kernel_gradient_j(theta, theta_prime, d)
           grad_kernel_prime_d = -grad_kernel_d
           hess_d_dprime = kernel_hessian_jj(theta, theta_prime, d)
           new = ((grad_u_d * grad_u_d_prime) * kernel(theta,theta_prime) + grad_u_d * grad_kernel_prime_d + grad_u_d_prime * grad_kernel_d + hess_d_dprime)/(K**2)
+          m = 1 + 1*(i!=j)
           if torch.isnan(new):
             KSD_d = KSD_d
           else:
@@ -93,3 +94,47 @@ def kernel_Stein_Discrepancies(mcmc_kernel, sample):
 
 
   return torch.sqrt(torch.abs(KSD))
+
+def KSD(mcmc_kernel, sample, c=100, beta=0.5):
+  # Computation of ALL the grads
+  dim = sample.shape[1]
+  z_i = {'beta': sample[0]}
+
+  z_grad, en = potential_grad(mcmc_kernel.potential_fn, z_i)
+  grads = z_grad['beta']
+  for i in range(1, sample.shape[0]):
+    z_i = {'beta': sample[i]}
+    z_grad, en = potential_grad(mcmc_kernel.potential_fn, z_i)
+    grads = torch.vstack((grads, z_grad['beta']))
+
+  c2 = c ** 2
+  K = sample.shape[0]
+  imq_ksd_sum = 0
+
+  # Calculate KSD
+  with Bar('Convergence ', max=K) as bar:
+    for i in range(1, K):
+      x1 = sample[i,]
+      for j in range(i, K):
+
+        x2 = sample[j,]
+        gradlogp1 = grads[i,]
+        gradlogp2 = grads[j,]
+
+        diff = x1 - x2
+        diff2 = torch.sum(diff ** 2)
+
+        base = diff2 + c2
+        base_beta = base ** (-beta)
+        base_beta1 = base_beta / base
+
+        kterm_sum = torch.sum(gradlogp1 * gradlogp2) * base_beta
+        coeffgrad = -2.0 * beta * base_beta1
+        gradx1term_sum = torch.sum(gradlogp1 * (-diff)) * coeffgrad
+        gradx2term_sum = torch.sum(gradlogp2 * diff) * coeffgrad
+        gradx1x2term_sum = (-dim + 2 * (beta + 1) * diff2 / base) * coeffgrad
+        m = 1 + 1 * (i != j)
+        imq_ksd_sum = imq_ksd_sum + m * (kterm_sum + gradx1term_sum + gradx2term_sum + gradx1x2term_sum)
+      bar.next()
+    imq_ksd = torch.sqrt(imq_ksd_sum) / K
+  return imq_ksd

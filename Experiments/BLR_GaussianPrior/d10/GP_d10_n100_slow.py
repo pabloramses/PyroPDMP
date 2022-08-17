@@ -87,13 +87,15 @@ for i in range(10):
     postMean_bk_d10_n100_slow = mcmc_bk_d10_n100_slow.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_bk_d10_n100_slow = mcmc_bk_d10_n100_slow.get_samples()['beta']
+    print("bk distance", torch.norm(postMean_bk_d10_n100_slow - truePost.transpose(0, -1)))
     predSamp_bk_d10_n100_slow = predictive_samples(postSamp_bk_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_bk_d10_n100_slow_df = pd.DataFrame(postSamp_bk_d10_n100_slow.numpy())
     postSamp_bk_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_bk_d10_n100_slow_run"+str(i)+".csv")
     "summary of predictions"
     predMean_bk_d10_n100_slow ,predLower_bk_d10_n100_slow, predUpper_bk_d10_n100_slow = predictive_summary(predSamp_bk_d10_n100_slow, 0.025)
-
+    print("bk r2", r2_score(labels.squeeze(), predMean_bk_d10_n100_slow))
+    print("bk percentage", percentage_correct(predLower_bk_d10_n100_slow,predUpper_bk_d10_n100_slow,true_y_d10_n100))
 
     "Scores"
     r2scores_bk_d10_n100_slow.append(r2_score(labels.squeeze(), predMean_bk_d10_n100_slow))
@@ -101,8 +103,9 @@ for i in range(10):
     distances_bk_d10_n100_slow.append(torch.norm(postMean_bk_d10_n100_slow - truePost.transpose(0,-1)))
 
     "Convergences"
-    #k_bk_d10_n100_slow = kernel_Stein_Discrepancies(bk_d10_n100_slow, postSamp_bk_d10_n100_slow[-1000:,:])
-    #convergence_bk_d10_n100_slow.append(k_bk_d10_n100_slow)
+    k_bk_d10_n100_slow = KSD(bk_d10_n100_slow, postSamp_bk_d10_n100_slow[-1000:,:])
+    convergence_bk_d10_n100_slow.append(k_bk_d10_n100_slow)
+    print("bk convergence", k_bk_d10_n100_slow)
 
     #######################################BPS########################################################
     "DEFINITION OF SAMPLER"
@@ -113,6 +116,7 @@ for i in range(10):
     postMean_bps_d10_n100_slow = mcmc_bps_d10_n100_slow.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_bps_d10_n100_slow = mcmc_bps_d10_n100_slow.get_samples()['beta']
+    print("bps distance", torch.norm(postMean_bps_d10_n100_slow - truePost.transpose(0, -1)))
     predSamp_bps_d10_n100_slow = predictive_samples(postSamp_bps_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_bps_d10_n100_slow_df = pd.DataFrame(postSamp_bps_d10_n100_slow.numpy())
@@ -120,15 +124,17 @@ for i in range(10):
 
     "summary of predictions"
     predMean_bps_d10_n100_slow ,predLower_bps_d10_n100_slow, predUpper_bps_d10_n100_slow = predictive_summary(predSamp_bps_d10_n100_slow, 0.025)
-
+    print("bps r2", r2_score(labels.squeeze(), predMean_bps_d10_n100_slow))
+    print("bps percentage", percentage_correct(predLower_bps_d10_n100_slow,predUpper_bps_d10_n100_slow,true_y_d10_n100))
     "r2 score"
     r2scores_bps_d10_n100_slow.append(r2_score(labels.squeeze(), predMean_bps_d10_n100_slow))
     perCorrect_bps_d10_n100_slow.append(percentage_correct(predLower_bps_d10_n100_slow,predUpper_bps_d10_n100_slow,true_y_d10_n100))
     distances_bps_d10_n100_slow.append(torch.norm(postMean_bps_d10_n100_slow - truePost.transpose(0,-1)))
 
     "Convergences"
-    ksd_bps_d10_n100_slow = kernel_Stein_Discrepancies(bps_d10_n100_slow, postSamp_bps_d10_n100_slow)
+    ksd_bps_d10_n100_slow = KSD(bps_d10_n100_slow, postSamp_bps_d10_n100_slow[-1000:,:])
     convergence_bps_d10_n100_slow.append(ksd_bps_d10_n100_slow)
+    print("bps convergence", ksd_bps_d10_n100_slow)
     #######################################ZZ########################################################
     "DEFINITION OF SAMPLER"
     zz_d10_n100_slow = ZZ(model, dimension=dim, Q = Target_sigma_inv, excess_rate = 0.25, ihpp_sampler = 'Exact')
@@ -138,21 +144,24 @@ for i in range(10):
     postMean_zz_d10_n100_slow = mcmc_zz_d10_n100_slow.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_zz_d10_n100_slow = mcmc_zz_d10_n100_slow.get_samples()['beta']
+    print("zz distance", torch.norm(postMean_zz_d10_n100_slow - truePost.transpose(0, -1)))
     predSamp_zz_d10_n100_slow = predictive_samples(postSamp_zz_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_zz_d10_n100_slow_df = pd.DataFrame(postSamp_zz_d10_n100_slow.numpy())
     postSamp_zz_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_zz_d10_n100_slow_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_zz_d10_n100_slow ,predLower_zz_d10_n100_slow, predUpper_zz_d10_n100_slow = predictive_summary(predSamp_zz_d10_n100_slow, 0.025)
-
+    print("zz r2", r2_score(labels.squeeze(), predMean_zz_d10_n100_slow))
+    print("zz percentage", percentage_correct(predLower_zz_d10_n100_slow,predUpper_zz_d10_n100_slow,true_y_d10_n100))
     "r2 score"
     r2scores_zz_d10_n100_slow.append(r2_score(labels.squeeze(), predMean_zz_d10_n100_slow))
     perCorrect_zz_d10_n100_slow.append(percentage_correct(predLower_zz_d10_n100_slow,predUpper_zz_d10_n100_slow,true_y_d10_n100))
     distances_zz_d10_n100_slow.append(torch.norm(postMean_zz_d10_n100_slow - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_zz_d10_n100_slow = kernel_Stein_Discrepancies(zz_d10_n100_slow, postSamp_zz_d10_n100_slow[-1000:,:])
-    #convergence_zz_d10_n100_slow.append(ksd_zz_d10_n100_slow)
+    ksd_zz_d10_n100_slow = KSD(zz_d10_n100_slow, postSamp_zz_d10_n100_slow[-1000:,:])
+    convergence_zz_d10_n100_slow.append(ksd_zz_d10_n100_slow)
+    print("zz convergence", ksd_zz_d10_n100_slow)
     #######################################HMC########################################################
     "DEFINITION OF SAMPLER"
     hmc_d10_n100_slow = NUTS(model)
@@ -162,22 +171,24 @@ for i in range(10):
     postMean_hmc_d10_n100_slow = mcmc_hmc_d10_n100_slow.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_hmc_d10_n100_slow = mcmc_hmc_d10_n100_slow.get_samples()['beta']
+    print("hmc distance", torch.norm(postMean_hmc_d10_n100_slow - truePost.transpose(0, -1)))
     predSamp_hmc_d10_n100_slow = predictive_samples(postSamp_hmc_d10_n100_slow, data_d10_n100)
     "SAVE TO CSV"
     postSamp_hmc_d10_n100_slow_df = pd.DataFrame(postSamp_hmc_d10_n100_slow.numpy())
     postSamp_hmc_d10_n100_slow_df.to_csv(PATH + "/results/d10_n100_slow/postSamp_hmc_d10_n100_slow_run" + str(i) + ".csv")
     "summary of predictions"
     predMean_hmc_d10_n100_slow ,predLower_hmc_d10_n100_slow, predUpper_hmc_d10_n100_slow = predictive_summary(predSamp_hmc_d10_n100_slow, 0.025)
-
+    print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d10_n100_slow))
+    print("hmc percentage", percentage_correct(predLower_hmc_d10_n100_slow,predUpper_hmc_d10_n100_slow,true_y_d10_n100))
     "r2 score"
     r2scores_hmc_d10_n100_slow.append(r2_score(labels.squeeze(), predMean_hmc_d10_n100_slow))
     perCorrect_hmc_d10_n100_slow.append(percentage_correct(predLower_hmc_d10_n100_slow,predUpper_hmc_d10_n100_slow,true_y_d10_n100))
     distances_hmc_d10_n100_slow.append(torch.norm(postMean_hmc_d10_n100_slow - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_hmc_d10_n100_slow = kernel_Stein_Discrepancies(hmc_d10_n100_slow, postSamp_hmc_d10_n100_slow[-1000:,:])
-    #convergence_hmc_d10_n100_slow.append(ksd_hmc_d10_n100_slow)
-
+    ksd_hmc_d10_n100_slow = KSD(hmc_d10_n100_slow, postSamp_hmc_d10_n100_slow[-1000:,:])
+    convergence_hmc_d10_n100_slow.append(ksd_hmc_d10_n100_slow)
+    print("hmc convergence", ksd_hmc_d10_n100_slow)
 "to pandas bk"
 r2scores_bk_d10_n100_slow_df = pd.DataFrame(r2scores_bk_d10_n100_slow)
 perCorrect_bk_d10_n100_slow_df = pd.DataFrame(perCorrect_bk_d10_n100_slow)

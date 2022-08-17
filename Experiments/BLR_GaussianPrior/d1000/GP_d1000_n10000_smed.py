@@ -92,7 +92,7 @@ for i in range(10):
     "REFERENCE MEASURE TUNING"
     Sigma_ref = torch.eye(dim)
     "DEFINITION OF SAMPLER"
-    bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 1, ihpp_sampler = 'Exact')
+    bk_d1000_n10000_smed = Boomerang(model, Sigma=Sigma_ref, hessian_bound = hessian_bound, refresh_rate = 10, ihpp_sampler = 'Exact')
     mcmc_bk_d1000_n10000_smed = MCMC(bk_d1000_n10000_smed, num_samples=num_samples, warmup_steps=warmup_steps)
     mcmc_bk_d1000_n10000_smed.run(data_d1000_n10000)
     "posterior distribution"

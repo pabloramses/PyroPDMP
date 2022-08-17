@@ -114,8 +114,9 @@ for i in range(10):
     distances_bk_d100_n1000_smed.append(torch.norm(postMean_bk_d100_n1000_smed - truePost.transpose(0,-1)))
 
     "Convergences"
-    #k_bk_d100_n1000_smed = kernel_Stein_Discrepancies(bk_d100_n1000_smed, postSamp_bk_d100_n1000_smed[-1000:,:])
-    #convergence_bk_d100_n1000_smed.append(k_bk_d100_n1000_smed)
+    ksd_bk_d100_n1000_smed = KSD(bk_d100_n1000_smed, postSamp_bk_d100_n1000_smed[-1000:,:])
+    convergence_bk_d100_n1000_smed.append(ksd_bk_d100_n1000_smed)
+    print("bk convergence", ksd_bk_d100_n1000_smed)
 
     #######################################BPS########################################################
     "DEFINITION OF SAMPLER"
@@ -142,8 +143,9 @@ for i in range(10):
     distances_bps_d100_n1000_smed.append(torch.norm(postMean_bps_d100_n1000_smed - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_bps_d100_n1000_smed = kernel_Stein_Discrepancies(bps_d100_n1000_smed, postSamp_bps_d100_n1000_smed[-1000:,:])
-    #convergence_bps_d100_n1000_smed.append(ksd_bps_d100_n1000_smed)
+    ksd_bps_d100_n1000_smed = KSD(bps_d100_n1000_smed, postSamp_bps_d100_n1000_smed[-1000:,:])
+    convergence_bps_d100_n1000_smed.append(ksd_bps_d100_n1000_smed)
+    print("bps convergence", ksd_bps_d100_n1000_smed)
     #######################################ZZ########################################################
     "DEFINITION OF SAMPLER"
     zz_d100_n1000_smed = ZZ(model, dimension=dim, Q = Target_sigma_inv, excess_rate = 1, ihpp_sampler = 'Exact')
@@ -168,8 +170,9 @@ for i in range(10):
     distances_zz_d100_n1000_smed.append(torch.norm(postMean_zz_d100_n1000_smed - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_zz_d100_n1000_smed = kernel_Stein_Discrepancies(zz_d100_n1000_smed, postSamp_zz_d100_n1000_smed[-1000:,:])
-    #convergence_zz_d100_n1000_smed.append(ksd_zz_d100_n1000_smed)
+    ksd_zz_d100_n1000_smed = KSD(zz_d100_n1000_smed, postSamp_zz_d100_n1000_smed[-1000:,:])
+    convergence_zz_d100_n1000_smed.append(ksd_zz_d100_n1000_smed)
+    print("bk convergence", ksd_zz_d100_n1000_smed)
     #######################################HMC########################################################
     "DEFINITION OF SAMPLER"
     hmc_d100_n1000_smed = NUTS(model)
@@ -194,41 +197,48 @@ for i in range(10):
     distances_hmc_d100_n1000_smed.append(torch.norm(postMean_hmc_d100_n1000_smed - truePost.transpose(0,-1)))
 
     "Convergences"
-    #ksd_hmc_d100_n1000_smed = kernel_Stein_Discrepancies(hmc_d100_n1000_smed, postSamp_hmc_d100_n1000_smed[-1000:,:])
-    #convergence_hmc_d100_n1000_smed.append(ksd_hmc_d100_n1000_smed)
-
+    ksd_hmc_d100_n1000_smed = KSD(hmc_d100_n1000_smed, postSamp_hmc_d100_n1000_smed[-1000:,:])
+    convergence_hmc_d100_n1000_smed.append(ksd_hmc_d100_n1000_smed)
+    print("hmc convergence", ksd_hmc_d100_n1000_smed)
 "to pandas bk"
 r2scores_bk_d100_n1000_smed_df = pd.DataFrame(r2scores_bk_d100_n1000_smed)
 perCorrect_bk_d100_n1000_smed_df = pd.DataFrame(perCorrect_bk_d100_n1000_smed)
 distances_bk_d100_n1000_smed_df = pd.DataFrame(distances_bk_d100_n1000_smed)
+convergence_bk_d100_n1000_smed_df = pd.DataFrame(convergence_bk_d100_n1000_smed)
 "to csv bps"
 r2scores_bk_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/r2scores_bk_d100_n1000_smed.csv")
 perCorrect_bk_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/perCorrect_bk_d100_n1000_smed.csv")
 distances_bk_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/distances_bk_d100_n1000_smed.csv")
-
+convergence_bk_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/convergence_bk_d100_n1000_smed.csv")
 "to pandas bps"
 r2scores_bps_d100_n1000_smed_df = pd.DataFrame(r2scores_bps_d100_n1000_smed)
 perCorrect_bps_d100_n1000_smed_df = pd.DataFrame(perCorrect_bps_d100_n1000_smed)
 distances_bps_d100_n1000_smed_df = pd.DataFrame(distances_bps_d100_n1000_smed)
+convergence_bps_d100_n1000_smed_df = pd.DataFrame(convergence_bps_d100_n1000_smed)
 "to csv bps"
 r2scores_bps_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/r2scores_bps_d100_n1000_smed.csv")
 perCorrect_bps_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/perCorrect_bps_d100_n1000_smed.csv")
 distances_bps_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/distances_bps_d100_n1000_smed.csv")
+convergence_bps_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/convergence_bps_d100_n1000_smed.csv")
 
 "to pandas zz"
 r2scores_zz_d100_n1000_smed_df = pd.DataFrame(r2scores_zz_d100_n1000_smed)
 perCorrect_zz_d100_n1000_smed_df = pd.DataFrame(perCorrect_zz_d100_n1000_smed)
 distances_zz_d100_n1000_smed_df = pd.DataFrame(distances_zz_d100_n1000_smed)
+convergence_zz_d100_n1000_smed_df = pd.DataFrame(convergence_zz_d100_n1000_smed)
 "to csv bps"
 r2scores_zz_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/r2scores_zz_d100_n1000_smed.csv")
 perCorrect_zz_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/perCorrect_zz_d100_n1000_smed.csv")
 distances_zz_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/distances_zz_d100_n1000_smed.csv")
+convergence_zz_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/convergence_zz_d100_n1000_smed.csv")
 
 "to pandas hmc"
 r2scores_hmc_d100_n1000_smed_df = pd.DataFrame(r2scores_hmc_d100_n1000_smed)
 perCorrect_hmc_d100_n1000_smed_df = pd.DataFrame(perCorrect_hmc_d100_n1000_smed)
 distances_hmc_d100_n1000_smed_df = pd.DataFrame(distances_hmc_d100_n1000_smed)
+convergence_hmc_d100_n1000_smed_df = pd.DataFrame(convergence_hmc_d100_n1000_smed)
 "to csv bps"
 r2scores_hmc_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/r2scores_hmc_d100_n1000_smed.csv")
 perCorrect_hmc_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/perCorrect_hmc_d100_n1000_smed.csv")
 distances_hmc_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/distances_hmc_d100_n1000_smed.csv")
+convergence_hmc_d100_n1000_smed_df.to_csv(PATH + "/results/d100_n1000_smed/convergence_hmc_d100_n1000_smed.csv")

@@ -23,6 +23,10 @@ from Pyro_Boomerang import Boomerang
 from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
+import os
+
+PATH = os.path.dirname(__file__)
+
 
 #True Model
 def model(data):
@@ -98,14 +102,15 @@ for i in range(10):
     predSamp_bk_d10_n1000_slar = predictive_samples(postSamp_bk_d10_n1000_slar, data_d10_n1000)
     "SAVE TO CSV"
     postSamp_bk_d10_n1000_slar_df = pd.DataFrame(postSamp_bk_d10_n1000_slar.numpy())
-    postSamp_bk_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/postSamp_bk_d10_n1000_slar_run"+str(i)+".csv")
+    postSamp_bk_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/postSamp_bk_d10_n1000_slar_run"+str(i)+".csv")
     "summary of predictions"
-    predMean_bk_d10_n1000_slar ,predlarer_bk_d10_n1000_slar, predUpper_bk_d10_n1000_slar = predictive_summary(predSamp_bk_d10_n1000_slar, 0.025)
-
-
+    predMean_bk_d10_n1000_slar ,predLower_bk_d10_n1000_slar, predUpper_bk_d10_n1000_slar = predictive_summary(predSamp_bk_d10_n1000_slar, 0.025)
+    print("bk r2", r2_score(labels.squeeze(), predMean_bk_d10_n1000_slar))
+    print("bk distance", torch.norm(postMean_bk_d10_n1000_slar - truePost.transpose(0, -1)))
+    print("bk percentage", percentage_correct(predLower_bk_d10_n1000_slar,predUpper_bk_d10_n1000_slar,true_y_d10_n1000))
     "Scores"
     r2scores_bk_d10_n1000_slar.append(r2_score(labels.squeeze(), predMean_bk_d10_n1000_slar))
-    perCorrect_bk_d10_n1000_slar.append(percentage_correct(predlarer_bk_d10_n1000_slar,predUpper_bk_d10_n1000_slar,true_y_d10_n1000))
+    perCorrect_bk_d10_n1000_slar.append(percentage_correct(predLower_bk_d10_n1000_slar,predUpper_bk_d10_n1000_slar,true_y_d10_n1000))
     distances_bk_d10_n1000_slar.append(torch.norm(postMean_bk_d10_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -124,14 +129,16 @@ for i in range(10):
     predSamp_bps_d10_n1000_slar = predictive_samples(postSamp_bps_d10_n1000_slar, data_d10_n1000)
     "SAVE TO CSV"
     postSamp_bps_d10_n1000_slar_df = pd.DataFrame(postSamp_bps_d10_n1000_slar.numpy())
-    postSamp_bps_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/postSamp_bps_d10_n1000_slar_run" + str(i) + ".csv")
+    postSamp_bps_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/postSamp_bps_d10_n1000_slar_run" + str(i) + ".csv")
 
     "summary of predictions"
-    predMean_bps_d10_n1000_slar ,predlarer_bps_d10_n1000_slar, predUpper_bps_d10_n1000_slar = predictive_summary(predSamp_bps_d10_n1000_slar, 0.025)
-
+    predMean_bps_d10_n1000_slar ,predLower_bps_d10_n1000_slar, predUpper_bps_d10_n1000_slar = predictive_summary(predSamp_bps_d10_n1000_slar, 0.025)
+    print("bps r2", r2_score(labels.squeeze(), predMean_bps_d10_n1000_slar))
+    print("bps distance", torch.norm(postMean_bps_d10_n1000_slar - truePost.transpose(0, -1)))
+    print("bps percentage", percentage_correct(predLower_bps_d10_n1000_slar,predUpper_bps_d10_n1000_slar,true_y_d10_n1000))
     "r2 score"
     r2scores_bps_d10_n1000_slar.append(r2_score(labels.squeeze(), predMean_bps_d10_n1000_slar))
-    perCorrect_bps_d10_n1000_slar.append(percentage_correct(predlarer_bps_d10_n1000_slar,predUpper_bps_d10_n1000_slar,true_y_d10_n1000))
+    perCorrect_bps_d10_n1000_slar.append(percentage_correct(predLower_bps_d10_n1000_slar,predUpper_bps_d10_n1000_slar,true_y_d10_n1000))
     distances_bps_d10_n1000_slar.append(torch.norm(postMean_bps_d10_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -149,13 +156,15 @@ for i in range(10):
     predSamp_zz_d10_n1000_slar = predictive_samples(postSamp_zz_d10_n1000_slar, data_d10_n1000)
     "SAVE TO CSV"
     postSamp_zz_d10_n1000_slar_df = pd.DataFrame(postSamp_zz_d10_n1000_slar.numpy())
-    postSamp_zz_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/postSamp_zz_d10_n1000_slar_run" + str(i) + ".csv")
+    postSamp_zz_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/postSamp_zz_d10_n1000_slar_run" + str(i) + ".csv")
     "summary of predictions"
-    predMean_zz_d10_n1000_slar ,predlarer_zz_d10_n1000_slar, predUpper_zz_d10_n1000_slar = predictive_summary(predSamp_zz_d10_n1000_slar, 0.025)
-
+    predMean_zz_d10_n1000_slar ,predLower_zz_d10_n1000_slar, predUpper_zz_d10_n1000_slar = predictive_summary(predSamp_zz_d10_n1000_slar, 0.025)
+    print("zz r2", r2_score(labels.squeeze(), predMean_zz_d10_n1000_slar))
+    print("zz distance", torch.norm(postMean_zz_d10_n1000_slar - truePost.transpose(0, -1)))
+    print("zz percentage", percentage_correct(predLower_zz_d10_n1000_slar,predUpper_zz_d10_n1000_slar,true_y_d10_n1000))
     "r2 score"
     r2scores_zz_d10_n1000_slar.append(r2_score(labels.squeeze(), predMean_zz_d10_n1000_slar))
-    perCorrect_zz_d10_n1000_slar.append(percentage_correct(predlarer_zz_d10_n1000_slar,predUpper_zz_d10_n1000_slar,true_y_d10_n1000))
+    perCorrect_zz_d10_n1000_slar.append(percentage_correct(predLower_zz_d10_n1000_slar,predUpper_zz_d10_n1000_slar,true_y_d10_n1000))
     distances_zz_d10_n1000_slar.append(torch.norm(postMean_zz_d10_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -173,13 +182,15 @@ for i in range(10):
     predSamp_hmc_d10_n1000_slar = predictive_samples(postSamp_hmc_d10_n1000_slar, data_d10_n1000)
     "SAVE TO CSV"
     postSamp_hmc_d10_n1000_slar_df = pd.DataFrame(postSamp_hmc_d10_n1000_slar.numpy())
-    postSamp_hmc_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/postSamp_hmc_d10_n1000_slar_run" + str(i) + ".csv")
+    postSamp_hmc_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/postSamp_hmc_d10_n1000_slar_run" + str(i) + ".csv")
     "summary of predictions"
-    predMean_hmc_d10_n1000_slar ,predlarer_hmc_d10_n1000_slar, predUpper_hmc_d10_n1000_slar = predictive_summary(predSamp_hmc_d10_n1000_slar, 0.025)
-
+    predMean_hmc_d10_n1000_slar ,predLower_hmc_d10_n1000_slar, predUpper_hmc_d10_n1000_slar = predictive_summary(predSamp_hmc_d10_n1000_slar, 0.025)
+    print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d10_n1000_slar))
+    print("hmc distance", torch.norm(postMean_hmc_d10_n1000_slar - truePost.transpose(0, -1)))
+    print("hmc percentage", percentage_correct(predLower_hmc_d10_n1000_slar,predUpper_hmc_d10_n1000_slar,true_y_d10_n1000))
     "r2 score"
     r2scores_hmc_d10_n1000_slar.append(r2_score(labels.squeeze(), predMean_hmc_d10_n1000_slar))
-    perCorrect_hmc_d10_n1000_slar.append(percentage_correct(predlarer_hmc_d10_n1000_slar,predUpper_hmc_d10_n1000_slar,true_y_d10_n1000))
+    perCorrect_hmc_d10_n1000_slar.append(percentage_correct(predLower_hmc_d10_n1000_slar,predUpper_hmc_d10_n1000_slar,true_y_d10_n1000))
     distances_hmc_d10_n1000_slar.append(torch.norm(postMean_hmc_d10_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -191,33 +202,33 @@ r2scores_bk_d10_n1000_slar_df = pd.DataFrame(r2scores_bk_d10_n1000_slar)
 perCorrect_bk_d10_n1000_slar_df = pd.DataFrame(perCorrect_bk_d10_n1000_slar)
 distances_bk_d10_n1000_slar_df = pd.DataFrame(distances_bk_d10_n1000_slar)
 "to csv bps"
-r2scores_bk_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/r2scores_bk_d10_n1000_slar.csv")
-perCorrect_bk_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/perCorrect_bk_d10_n1000_slar.csv")
-distances_bk_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/distances_bk_d10_n1000_slar.csv")
+r2scores_bk_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/r2scores_bk_d10_n1000_slar.csv")
+perCorrect_bk_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/perCorrect_bk_d10_n1000_slar.csv")
+distances_bk_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/distances_bk_d10_n1000_slar.csv")
 
 "to pandas bps"
 r2scores_bps_d10_n1000_slar_df = pd.DataFrame(r2scores_bps_d10_n1000_slar)
 perCorrect_bps_d10_n1000_slar_df = pd.DataFrame(perCorrect_bps_d10_n1000_slar)
 distances_bps_d10_n1000_slar_df = pd.DataFrame(distances_bps_d10_n1000_slar)
 "to csv bps"
-r2scores_bps_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/r2scores_bps_d10_n1000_slar.csv")
-perCorrect_bps_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/perCorrect_bps_d10_n1000_slar.csv")
-distances_bps_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/distances_bps_d10_n1000_slar.csv")
+r2scores_bps_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/r2scores_bps_d10_n1000_slar.csv")
+perCorrect_bps_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/perCorrect_bps_d10_n1000_slar.csv")
+distances_bps_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/distances_bps_d10_n1000_slar.csv")
 
 "to pandas zz"
 r2scores_zz_d10_n1000_slar_df = pd.DataFrame(r2scores_zz_d10_n1000_slar)
 perCorrect_zz_d10_n1000_slar_df = pd.DataFrame(perCorrect_zz_d10_n1000_slar)
 distances_zz_d10_n1000_slar_df = pd.DataFrame(distances_zz_d10_n1000_slar)
 "to csv bps"
-r2scores_zz_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/r2scores_zz_d10_n1000_slar.csv")
-perCorrect_zz_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/perCorrect_zz_d10_n1000_slar.csv")
-distances_zz_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/distances_zz_d10_n1000_slar.csv")
+r2scores_zz_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/r2scores_zz_d10_n1000_slar.csv")
+perCorrect_zz_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/perCorrect_zz_d10_n1000_slar.csv")
+distances_zz_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/distances_zz_d10_n1000_slar.csv")
 
 "to pandas hmc"
 r2scores_hmc_d10_n1000_slar_df = pd.DataFrame(r2scores_hmc_d10_n1000_slar)
 perCorrect_hmc_d10_n1000_slar_df = pd.DataFrame(perCorrect_hmc_d10_n1000_slar)
 distances_hmc_d10_n1000_slar_df = pd.DataFrame(distances_hmc_d10_n1000_slar)
 "to csv bps"
-r2scores_hmc_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/r2scores_hmc_d10_n1000_slar.csv")
-perCorrect_hmc_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/perCorrect_hmc_d10_n1000_slar.csv")
-distances_hmc_d10_n1000_slar_df.to_csv("/Users/pabloalonso/OneDrive - University of Warwick/Dissertation/PDMP/Experiments/BLR_GaussianPrior/results/d10_n1000_slar/distances_hmc_d10_n1000_slar.csv")
+r2scores_hmc_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/r2scores_hmc_d10_n1000_slar.csv")
+perCorrect_hmc_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/perCorrect_hmc_d10_n1000_slar.csv")
+distances_hmc_d10_n1000_slar_df.to_csv(PATH + "/results/d10_n1000_slar/distances_hmc_d10_n1000_slar.csv")
