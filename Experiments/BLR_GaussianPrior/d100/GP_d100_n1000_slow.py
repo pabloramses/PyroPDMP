@@ -24,7 +24,7 @@ from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
 
-PATH = os.path.dirname(__file__)
+PATH = os.getcwd()
 #True Model
 def model(data):
     coefs_mean = torch.zeros(dim)

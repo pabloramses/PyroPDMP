@@ -25,7 +25,7 @@ from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
 
-PATH = os.path.dirname(__file__)
+PATH = os.getcwd()
 
 #True Model
 def model(data):
@@ -106,9 +106,9 @@ for i in range(10):
     distances_bk_d10_n100_smed.append(torch.norm(postMean_bk_d10_n100_smed - truePost.transpose(0,-1)))
 
     "Convergences"
-    k_bk_d10_n100_smed = KSD(bk_d10_n100_smed, postSamp_bk_d10_n100_smed[-1000:,:])
-    convergence_bk_d10_n100_smed.append(k_bk_d10_n100_smed)
-    print("bk convergence", ksd_bps_d10_n100_smed)
+    ksd_bk_d10_n100_smed = KSD(bk_d10_n100_smed, postSamp_bk_d10_n100_smed[-1000:,:])
+    convergence_bk_d10_n100_smed.append(ksd_bk_d10_n100_smed)
+    print("bk convergence", ksd_bk_d10_n100_smed)
 
     #######################################BPS########################################################
     "DEFINITION OF SAMPLER"

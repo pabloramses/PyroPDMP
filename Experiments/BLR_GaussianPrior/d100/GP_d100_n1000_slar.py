@@ -25,7 +25,7 @@ from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
 
-PATH = os.path.dirname(__file__)
+PATH = os.getcwd()
 #True Model
 def model(data):
     coefs_mean = torch.zeros(dim)
@@ -142,7 +142,7 @@ for i in range(10):
     distances_bps_d100_n1000_slar.append(torch.norm(postMean_bps_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    ksd_bps_d100_n1000_slar = kernel_Stein_Discrepancies(bps_d100_n1000_slar, postSamp_bps_d100_n1000_slar[-1000:,:])
+    ksd_bps_d100_n1000_slar = KSD(bps_d100_n1000_slar, postSamp_bps_d100_n1000_slar[-1000:,:])
     convergence_bps_d100_n1000_slar.append(ksd_bps_d100_n1000_slar)
     print("bps convergence", ksd_bps_d100_n1000_slar)
     #######################################ZZ########################################################
@@ -196,7 +196,7 @@ for i in range(10):
     distances_hmc_d100_n1000_slar.append(torch.norm(postMean_hmc_d100_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    ksd_hmc_d100_n1000_slar = kernel_Stein_Discrepancies(hmc_d100_n1000_slar, postSamp_hmc_d100_n1000_slar[-1000:,:])
+    ksd_hmc_d100_n1000_slar = KSD(hmc_d100_n1000_slar, postSamp_hmc_d100_n1000_slar[-1000:,:])
     convergence_hmc_d100_n1000_slar.append(ksd_hmc_d100_n1000_slar)
     print("hmc convergence", ksd_hmc_d100_n1000_slar)
 "to pandas bk"

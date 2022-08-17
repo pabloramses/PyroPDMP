@@ -25,7 +25,7 @@ from Pyro_Zigzag import ZZ
 from Pyro_BPS import BPS
 from utils import *
 
-PATH = os.path.dirname(__file__)
+PATH = os.getcwd()
 
 #True Model
 def model(data):
@@ -161,7 +161,7 @@ for i in range(10):
     distances_zz_d10_n100_slar.append(torch.norm(postMean_zz_d10_n100_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    ksd_zz_d10_n100_slar = kernel_Stein_Discrepancies(zz_d10_n100_slar, postSamp_zz_d10_n100_slar[-1000:,:])
+    ksd_zz_d10_n100_slar = KSD(zz_d10_n100_slar, postSamp_zz_d10_n100_slar[-1000:,:])
     convergence_zz_d10_n100_slar.append(ksd_zz_d10_n100_slar)
     print("zz convergence", ksd_zz_d10_n100_slar)
     #######################################HMC########################################################
@@ -188,7 +188,7 @@ for i in range(10):
     distances_hmc_d10_n100_slar.append(torch.norm(postMean_hmc_d10_n100_slar - truePost.transpose(0,-1)))
 
     "Convergences"
-    ksd_hmc_d10_n100_slar = kernel_Stein_Discrepancies(hmc_d10_n100_slar, postSamp_hmc_d10_n100_slar[-1000:,:])
+    ksd_hmc_d10_n100_slar = KSD(hmc_d10_n100_slar, postSamp_hmc_d10_n100_slar[-1000:,:])
     convergence_hmc_d10_n100_slar.append(ksd_hmc_d10_n100_slar)
     print("hmc convergence", ksd_hmc_d10_n100_slar)
 
