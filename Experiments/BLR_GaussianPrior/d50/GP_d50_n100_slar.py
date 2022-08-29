@@ -205,7 +205,7 @@ convergence_bk_d50_n100_slar_df = pd.DataFrame(convergence_bk_d50_n100_slar)
 r2scores_bk_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/r2scores_bk_d50_n100_slar.csv")
 perCorrect_bk_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/perCorrect_bk_d50_n100_slar.csv")
 distances_bk_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/distances_bk_d50_n100_slar.csv")
-convergence_bk_d50_n100_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bk_d50_n100_slar.csv")
+convergence_bk_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/convergence_bk_d50_n100_slar.csv")
 
 "to pandas bps"
 r2scores_bps_d50_n100_slar_df = pd.DataFrame(r2scores_bps_d50_n100_slar)
@@ -216,7 +216,7 @@ convergence_bps_d50_n100_slar_df = pd.DataFrame(convergence_bps_d50_n100_slar)
 r2scores_bps_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/r2scores_bps_d50_n100_slar.csv")
 perCorrect_bps_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/perCorrect_bps_d50_n100_slar.csv")
 distances_bps_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/distances_bps_d50_n100_slar.csv")
-convergence_bps_d50_n100_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bps_d50_n100_slar.csv")
+convergence_bps_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/convergence_bps_d50_n100_slar.csv")
 
 "to pandas zz"
 r2scores_zz_d50_n100_slar_df = pd.DataFrame(r2scores_zz_d50_n100_slar)
@@ -227,7 +227,7 @@ convergence_zz_d50_n100_slar_df = pd.DataFrame(convergence_zz_d50_n100_slar)
 r2scores_zz_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/r2scores_zz_d50_n100_slar.csv")
 perCorrect_zz_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/perCorrect_zz_d50_n100_slar.csv")
 distances_zz_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/distances_zz_d50_n100_slar.csv")
-convergence_zz_d50_n100_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_zz_d50_n100_slar.csv")
+convergence_zz_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/convergence_zz_d50_n100_slar.csv")
 
 
 "to pandas hmc"
@@ -239,4 +239,4 @@ convergence_hmc_d50_n100_slar_df = pd.DataFrame(convergence_hmc_d50_n100_slar)
 r2scores_hmc_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/r2scores_hmc_d50_n100_slar.csv")
 perCorrect_hmc_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/perCorrect_hmc_d50_n100_slar.csv")
 distances_hmc_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/distances_hmc_d50_n100_slar.csv")
-convergence_hmc_d50_n100_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_hmc_d50_n100_slar.csv")
+convergence_hmc_d50_n100_slar_df.to_csv(PATH + "/results/d50_n100_slar/convergence_hmc_d50_n100_slar.csv")

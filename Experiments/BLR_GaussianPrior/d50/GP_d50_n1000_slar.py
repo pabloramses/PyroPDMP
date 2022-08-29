@@ -74,7 +74,7 @@ for i in range(10):
     true_y_d50_n1000 = torch.matmul(data_d50_n1000, true_coefs_100)
 
     "lar noise SNR = 30"
-    SNR = 30
+    SNR = 5
     sigma_lar = true_y_d50_n1000.var(0) / SNR
     y_d50_n1000_slar = true_y_d50_n1000 + torch.normal(0, sigma_lar, size = (1, sample_size))
 
@@ -98,17 +98,19 @@ for i in range(10):
     postMean_bk_d50_n1000_slar = mcmc_bk_d50_n1000_slar.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_bk_d50_n1000_slar = mcmc_bk_d50_n1000_slar.get_samples()['beta']
+    print("bk distance", torch.norm(postMean_bk_d50_n1000_slar - truePost.transpose(0, -1)))
     predSamp_bk_d50_n1000_slar = predictive_samples(postSamp_bk_d50_n1000_slar, data_d50_n1000)
     "SAVE TO CSV"
     postSamp_bk_d50_n1000_slar_df = pd.DataFrame(postSamp_bk_d50_n1000_slar.numpy())
     postSamp_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/postSamp_bk_d50_n1000_slar_run"+str(i)+".csv")
     "summary of predictions"
-    predMean_bk_d50_n1000_slar ,predlarer_bk_d50_n1000_slar, predUpper_bk_d50_n1000_slar = predictive_summary(predSamp_bk_d50_n1000_slar, 0.025)
-
+    predMean_bk_d50_n1000_slar ,predLower_bk_d50_n1000_slar, predUpper_bk_d50_n1000_slar = predictive_summary(predSamp_bk_d50_n1000_slar, 0.025)
+    print("bk r2", r2_score(labels.squeeze(), predMean_bk_d50_n1000_slar))
+    print("bk percentage", percentage_correct(predLower_bk_d50_n1000_slar, predUpper_bk_d50_n1000_slar, true_y_d50_n1000))
 
     "Scores"
     r2scores_bk_d50_n1000_slar.append(r2_score(labels.squeeze(), predMean_bk_d50_n1000_slar))
-    perCorrect_bk_d50_n1000_slar.append(percentage_correct(predlarer_bk_d50_n1000_slar,predUpper_bk_d50_n1000_slar,true_y_d50_n1000))
+    perCorrect_bk_d50_n1000_slar.append(percentage_correct(predLower_bk_d50_n1000_slar,predUpper_bk_d50_n1000_slar,true_y_d50_n1000))
     distances_bk_d50_n1000_slar.append(torch.norm(postMean_bk_d50_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -124,17 +126,19 @@ for i in range(10):
     postMean_bps_d50_n1000_slar = mcmc_bps_d50_n1000_slar.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_bps_d50_n1000_slar = mcmc_bps_d50_n1000_slar.get_samples()['beta']
+    print("bps distance", torch.norm(postMean_bps_d50_n1000_slar - truePost.transpose(0, -1)))
     predSamp_bps_d50_n1000_slar = predictive_samples(postSamp_bps_d50_n1000_slar, data_d50_n1000)
     "SAVE TO CSV"
     postSamp_bps_d50_n1000_slar_df = pd.DataFrame(postSamp_bps_d50_n1000_slar.numpy())
     postSamp_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/postSamp_bps_d50_n1000_slar_run" + str(i) + ".csv")
 
     "summary of predictions"
-    predMean_bps_d50_n1000_slar ,predlarer_bps_d50_n1000_slar, predUpper_bps_d50_n1000_slar = predictive_summary(predSamp_bps_d50_n1000_slar, 0.025)
-
+    predMean_bps_d50_n1000_slar ,predLower_bps_d50_n1000_slar, predUpper_bps_d50_n1000_slar = predictive_summary(predSamp_bps_d50_n1000_slar, 0.025)
+    print("bps r2", r2_score(labels.squeeze(), predMean_bps_d50_n1000_slar))
+    print("bps percentage", percentage_correct(predLower_bps_d50_n1000_slar, predUpper_bps_d50_n1000_slar, true_y_d50_n1000))
     "r2 score"
     r2scores_bps_d50_n1000_slar.append(r2_score(labels.squeeze(), predMean_bps_d50_n1000_slar))
-    perCorrect_bps_d50_n1000_slar.append(percentage_correct(predlarer_bps_d50_n1000_slar,predUpper_bps_d50_n1000_slar,true_y_d50_n1000))
+    perCorrect_bps_d50_n1000_slar.append(percentage_correct(predLower_bps_d50_n1000_slar,predUpper_bps_d50_n1000_slar,true_y_d50_n1000))
     distances_bps_d50_n1000_slar.append(torch.norm(postMean_bps_d50_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -149,16 +153,18 @@ for i in range(10):
     postMean_zz_d50_n1000_slar = mcmc_zz_d50_n1000_slar.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_zz_d50_n1000_slar = mcmc_zz_d50_n1000_slar.get_samples()['beta']
+    print("zz distance", torch.norm(postMean_zz_d50_n1000_slar - truePost.transpose(0, -1)))
     predSamp_zz_d50_n1000_slar = predictive_samples(postSamp_zz_d50_n1000_slar, data_d50_n1000)
     "SAVE TO CSV"
     postSamp_zz_d50_n1000_slar_df = pd.DataFrame(postSamp_zz_d50_n1000_slar.numpy())
     postSamp_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/postSamp_zz_d50_n1000_slar_run" + str(i) + ".csv")
     "summary of predictions"
-    predMean_zz_d50_n1000_slar ,predlarer_zz_d50_n1000_slar, predUpper_zz_d50_n1000_slar = predictive_summary(predSamp_zz_d50_n1000_slar, 0.025)
-
+    predMean_zz_d50_n1000_slar ,predLower_zz_d50_n1000_slar, predUpper_zz_d50_n1000_slar = predictive_summary(predSamp_zz_d50_n1000_slar, 0.025)
+    print("zz r2", r2_score(labels.squeeze(), predMean_zz_d50_n1000_slar))
+    print("zz percentage", percentage_correct(predLower_zz_d50_n1000_slar, predUpper_zz_d50_n1000_slar, true_y_d50_n1000))
     "r2 score"
     r2scores_zz_d50_n1000_slar.append(r2_score(labels.squeeze(), predMean_zz_d50_n1000_slar))
-    perCorrect_zz_d50_n1000_slar.append(percentage_correct(predlarer_zz_d50_n1000_slar,predUpper_zz_d50_n1000_slar,true_y_d50_n1000))
+    perCorrect_zz_d50_n1000_slar.append(percentage_correct(predLower_zz_d50_n1000_slar,predUpper_zz_d50_n1000_slar,true_y_d50_n1000))
     distances_zz_d50_n1000_slar.append(torch.norm(postMean_zz_d50_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -173,16 +179,18 @@ for i in range(10):
     postMean_hmc_d50_n1000_slar = mcmc_hmc_d50_n1000_slar.get_samples()['beta'].mean(0)
     "get samples from predictive distribution"
     postSamp_hmc_d50_n1000_slar = mcmc_hmc_d50_n1000_slar.get_samples()['beta']
+    print("hmc distance", torch.norm(postMean_hmc_d50_n1000_slar - truePost.transpose(0, -1)))
     predSamp_hmc_d50_n1000_slar = predictive_samples(postSamp_hmc_d50_n1000_slar, data_d50_n1000)
     "SAVE TO CSV"
     postSamp_hmc_d50_n1000_slar_df = pd.DataFrame(postSamp_hmc_d50_n1000_slar.numpy())
     postSamp_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/postSamp_hmc_d50_n1000_slar_run" + str(i) + ".csv")
     "summary of predictions"
-    predMean_hmc_d50_n1000_slar ,predlarer_hmc_d50_n1000_slar, predUpper_hmc_d50_n1000_slar = predictive_summary(predSamp_hmc_d50_n1000_slar, 0.025)
-
+    predMean_hmc_d50_n1000_slar ,predLower_hmc_d50_n1000_slar, predUpper_hmc_d50_n1000_slar = predictive_summary(predSamp_hmc_d50_n1000_slar, 0.025)
+    print("hmc r2", r2_score(labels.squeeze(), predMean_hmc_d50_n1000_slar))
+    print("hmc percentage", percentage_correct(predLower_hmc_d50_n1000_slar, predUpper_hmc_d50_n1000_slar, true_y_d50_n1000))
     "r2 score"
     r2scores_hmc_d50_n1000_slar.append(r2_score(labels.squeeze(), predMean_hmc_d50_n1000_slar))
-    perCorrect_hmc_d50_n1000_slar.append(percentage_correct(predlarer_hmc_d50_n1000_slar,predUpper_hmc_d50_n1000_slar,true_y_d50_n1000))
+    perCorrect_hmc_d50_n1000_slar.append(percentage_correct(predLower_hmc_d50_n1000_slar,predUpper_hmc_d50_n1000_slar,true_y_d50_n1000))
     distances_hmc_d50_n1000_slar.append(torch.norm(postMean_hmc_d50_n1000_slar - truePost.transpose(0,-1)))
 
     "Convergences"
@@ -198,7 +206,7 @@ convergence_bk_d50_n1000_slar_df = pd.DataFrame(convergence_bk_d50_n1000_slar)
 r2scores_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/r2scores_bk_d50_n1000_slar.csv")
 perCorrect_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/perCorrect_bk_d50_n1000_slar.csv")
 distances_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/distances_bk_d50_n1000_slar.csv")
-convergence_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bk_d50_n1000_slar.csv")
+convergence_bk_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/convergence_bk_d50_n1000_slar.csv")
 
 "to pandas bps"
 r2scores_bps_d50_n1000_slar_df = pd.DataFrame(r2scores_bps_d50_n1000_slar)
@@ -209,7 +217,7 @@ convergence_bps_d50_n1000_slar_df = pd.DataFrame(convergence_bps_d50_n1000_slar)
 r2scores_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/r2scores_bps_d50_n1000_slar.csv")
 perCorrect_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/perCorrect_bps_d50_n1000_slar.csv")
 distances_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/distances_bps_d50_n1000_slar.csv")
-convergence_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_bps_d50_n1000_slar.csv")
+convergence_bps_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/convergence_bps_d50_n1000_slar.csv")
 
 "to pandas zz"
 r2scores_zz_d50_n1000_slar_df = pd.DataFrame(r2scores_zz_d50_n1000_slar)
@@ -220,7 +228,7 @@ convergence_zz_d50_n1000_slar_df = pd.DataFrame(convergence_zz_d50_n1000_slar)
 r2scores_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/r2scores_zz_d50_n1000_slar.csv")
 perCorrect_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/perCorrect_zz_d50_n1000_slar.csv")
 distances_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/distances_zz_d50_n1000_slar.csv")
-convergence_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_zz_d50_n1000_slar.csv")
+convergence_zz_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/convergence_zz_d50_n1000_slar.csv")
 
 "to pandas hmc"
 r2scores_hmc_d50_n1000_slar_df = pd.DataFrame(r2scores_hmc_d50_n1000_slar)
@@ -231,4 +239,4 @@ convergence_hmc_d50_n1000_slar_df = pd.DataFrame(convergence_hmc_d50_n1000_slar)
 r2scores_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/r2scores_hmc_d50_n1000_slar.csv")
 perCorrect_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/perCorrect_hmc_d50_n1000_slar.csv")
 distances_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/distances_hmc_d50_n1000_slar.csv")
-convergence_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d100_n1000_slow/convergence_hmc_d50_n1000_slar.csv")
+convergence_hmc_d50_n1000_slar_df.to_csv(PATH + "/results/d50_n1000_slar/convergence_hmc_d50_n1000_slar.csv")
