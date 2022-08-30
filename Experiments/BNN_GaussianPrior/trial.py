@@ -46,7 +46,7 @@ pyro.clear_param_store()
 
 boom_kernel = Boomerang(bnn, Sigma=np.eye(301), refresh_rate = 100, ihpp_sampler='Corbella')
 from pyro.infer import MCMC
-mcmc = MCMC(boom_kernel, num_samples=10, warmup_steps=2)
+mcmc = MCMC(boom_kernel, num_samples=10000, warmup_steps=2000)
 mcmc.run(x.reshape(-1,1), y)
 
 # Set model to evaluation mode
@@ -58,26 +58,25 @@ predictive = pyro.infer.Predictive(bnn, posterior_samples = mcmc.get_samples())
 y_train_pred = torch.mean(predictive(x.reshape(-1,1))['obs'], dim=0)
 
 
-""""
+
 def summary(samples):
     site_stats = {}
     for k, v in samples.items():
         site_stats[k] = {
-            "5%": v.kthvalue(int(len(v) * 0.05), dim=0)[0],
-            "95%": v.kthvalue(int(len(v) * 0.95), dim=0)[0],
+            "5%": v.kthvalue(int(len(v) * 0.05)+1, dim=0)[0],
+            "95%": v.kthvalue(int(len(v) * 0.95)+1, dim=0)[0],
         }
     return site_stats
 
-pred_summary = summary(predictive(torch.tensor(x).detach().float().reshape(-1,1)))
+pred_summary = summary(predictive(x.reshape(-1,1)))
 lower = pred_summary["obs"]["5%"]
 upper = pred_summary["obs"]["95%"]
-"""
+
 y_train_pred_df = pd.DataFrame(y_train_pred)
 y_train_pred_df.to_csv(PATH + "/y_train_pred.csv")
 
-"""
+
 lower_df = pd.DataFrame(lower)
 lower_df.to_csv(PATH + "/lower.csv")
 upper_df = pd.DataFrame(upper)
 upper_df.to_csv(PATH + "/upper.csv")
-"""
