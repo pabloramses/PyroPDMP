@@ -16,3 +16,5 @@ For the simulation of PDMPs it is necessary to sample from an In-Homogeneous Poi
 - [Stochastic Bouncy Particle Sampler](https://proceedings.mlr.press/v70/pakman17a.html)
 - [Numerical Integration of the rates](https://arxiv.org/abs/2003.03636)
 - [Numerical optimisation to bound the rates](https://arxiv.org/abs/2206.11410) 
+
+Several performance and diagnosis metrics are available as well (any of the available in Pyro can indeed be used). Of particular interest, it includes a simple implementation of a [Kernel Stein Discrepancy](https://arxiv.org/pdf/1907.06986.pdf) measure that is very well suited for gradient-based MCMC methods.  
