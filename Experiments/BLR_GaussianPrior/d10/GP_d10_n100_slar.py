@@ -202,7 +202,7 @@ convergence_bk_d10_n100_slar_df = pd.DataFrame(convergence_bk_d10_n100_slar)
 r2scores_bk_d10_n100_slar_df.to_csv(PATH + "/results/d10_n100_slar/r2scores_bk_d10_n100_slar.csv")
 perCorrect_bk_d10_n100_slar_df.to_csv(PATH + "/results/d10_n100_slar/perCorrect_bk_d10_n100_slar.csv")
 distances_bk_d10_n100_slar_df.to_csv(PATH + "/results/d10_n100_slar/distances_bk_d10_n100_slar.csv")
-convergence_bk_d10_n100_slar_df.to_csv(PATH + "/results/d10_n100_slar/convergence_bk_d10_n100_slar.csv")
+
 
 "to pandas bps"
 r2scores_bps_d10_n100_slar_df = pd.DataFrame(r2scores_bps_d10_n100_slar)

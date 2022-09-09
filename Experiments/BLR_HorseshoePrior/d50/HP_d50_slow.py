@@ -70,7 +70,7 @@ convergence_zz_d50_slow = []
 
 for i in range(5):
     mu_betas = torch.randint(1, 3, size=(1, dim_mod))[0] * 1.0
-    coefs_100 = torch.normal(mean=mu_betas, std=torch.ones(dim_mod) * 0.8)
+    coefs_100 = torch.normal(mean=mu_betas, std=torch.ones(dim_mod) * 0.2)
     sparse_coefs_100 = torch.bernoulli(torch.ones(dim_mod)*0.8)
     true_coefs_100 = torch.normal(mean=mu_betas, std=torch.ones(dim_mod)) * sparse_coefs_100
 
