@@ -13,7 +13,6 @@ PyroPDMP currently includes the following PDMP samplers:
 For the simulation of PDMPs it is necessary to sample from an In-Homogeneous Poisson Process. This can either be done by integrating the jump rates of the PDMP or by bounding them. Several approaches are presently available to simulate event times: 
 
 - Dominated gradient/hessian based strategies. 
-- [Stochastic Bouncy Particle Sampler](https://proceedings.mlr.press/v70/pakman17a.html)
 - [Numerical Integration of the rates](https://arxiv.org/abs/2003.03636)
 - [Numerical optimisation to bound the rates](https://arxiv.org/abs/2206.11410) 
 
