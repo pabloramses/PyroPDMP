@@ -25,7 +25,6 @@ lower_ext = read.csv("lower_ext.csv")$X0
 upper_ext = read.csv("upper_ext.csv")$X0
 
 
-#plot 
 png("figure_BNN.png", units="in", width=7, height=5, res=600)
 ggplot(df, aes(x_test)) +
   geom_ribbon(aes(ymin = lower_test, ymax = upper_test, color = "95% predictive CI"), fill = "grey70", linetype=0) + 
@@ -39,19 +38,12 @@ ggplot(df, aes(x_test)) +
   guides(color = guide_legend(override.aes = list(linetype = c(0, 1, 2, 0),
                                                   shape = c(16,NA,NA,NA), 
                                                   size = 1)))+
-
-  theme(legend.position = c(0.2, 0.85),
+  
+  theme(legend.position = c(0.265, 0.9),
         legend.background = element_rect(fill = "white"),
         legend.title = element_text(size=3),
-        legend.text = element_text(size=5),
-        legend.key = element_rect(size=10)) 
-
-                       
-                       
-#c("95% predictive CI" = "grey","Train points" = "black")) #+
-  #guides(color = guide_legend(override.aes = list(linetype = c(1, "dashed", "dashed"),
-                                                  #shape = c(NA))))+theme(plot.title = element_text(hjust = 0.5, size = 10))
-
+        legend.text = element_text(size=17))
+#legend.key = element_rect(size=10)) 
 dev.off()
 
 png("figure_BNN_extended.png", units="in", width=7, height=5, res=600)

@@ -40,18 +40,11 @@ ggplot(df, aes(x_test)) +
                                                   shape = c(16,NA,NA,NA), 
                                                   size = 1)))+
 
-  theme(legend.position = c(0.2, 0.85),
+  theme(legend.position = c(0.265, 0.9),
         legend.background = element_rect(fill = "white"),
         legend.title = element_text(size=3),
-        legend.text = element_text(size=5),
-        legend.key = element_rect(size=10)) 
-
-                       
-                       
-#c("95% predictive CI" = "grey","Train points" = "black")) #+
-  #guides(color = guide_legend(override.aes = list(linetype = c(1, "dashed", "dashed"),
-                                                  #shape = c(NA))))+theme(plot.title = element_text(hjust = 0.5, size = 10))
-
+        legend.text = element_text(size=17))
+        #legend.key = element_rect(size=10)) 
 dev.off()
 
 png("figure_BNN_extended.png", units="in", width=7, height=5, res=600)
