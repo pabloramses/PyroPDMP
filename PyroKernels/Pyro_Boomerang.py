@@ -51,6 +51,9 @@ class Boomerang(MCMCKernel):
         self.dimensions = None
         self.key_of_z = None
         self.shapes = None
+        self.t = 0.0
+        self.dts = [0.0]
+
 
         # Some inputs specific for Boomerang
         self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
@@ -133,6 +136,7 @@ class Boomerang(MCMCKernel):
             z_grads, potential_energy = {}, self.potential_fn(self.initial_params)
         # Initiate a velocity
         initial_v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+        self.v_skeleton = initial_v
         self._cache(self.initial_params, initial_v, potential_energy, z_grads)
 
     def cleanup(self):
@@ -287,6 +291,8 @@ class Boomerang(MCMCKernel):
                     # self._no_accepted_switches = self._no_accepted_switches + 1
                     updateSkeleton = False
                     self._cache(z, v, potential_energy_new, z_grads_new)
+                    self.t = self.t + dt
+                    self.dts.append(dt)
 
         elif self.ihpp_sampler == 'Corbella':
             rebound = True
@@ -358,7 +364,10 @@ class Boomerang(MCMCKernel):
                     self.total_samp = self.total_samp + 1
                     # self._no_accepted_switches = self._no_accepted_switches + 1
                     updateSkeleton = False
+                    self.v_skeleton = np.vstack((self.v_skeleton, np.transpose(v)))
                     self._cache(z, v, potential_energy_new, z_grads_new)
+                    self.t = self.t + dt
+                    self.dts.append(dt)
 
         elif self.ihpp_sampler == 'Numerical':
             self.bound = "No"

@@ -152,7 +152,7 @@ def variance_limits(samples):
     site_stats = {}
     for k, v in samples.items():
         site_stats[k] = {
-            "up": v.mean(0) + 3*v.var(0),
-            "low": v.mean(0) - 3*v.var(0),
+            "up": v.mean(0) + 3*v.std(0),
+            "low": v.mean(0) - 3*v.std(0),
         }
     return site_stats
