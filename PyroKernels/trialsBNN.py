@@ -7,10 +7,13 @@ import torch.nn.functional as F
 import pyro
 import pyro.distributions as dist
 from pyro.nn import PyroModule, PyroSample
+from pyro.infer import MCMC, NUTS
 from utils import *
 import os
 PATH = os.getcwd()
 
+NUM_SAMPLES = 1000
+WARM_UP = 9000
 
 x_train = torch.linspace(-torch.pi, torch.pi, 100)
 y_train = torch.sin(x_train) + torch.normal(0., 0.1, size=(100,))
@@ -66,20 +69,25 @@ bnn = BNN()
 pyro.clear_param_store()
 
 boom_kernel = Boomerang(bnn, Sigma=np.eye(30), refresh_rate = 10, ihpp_sampler='Corbella')
-from pyro.infer import MCMC
-mcmc = MCMC(boom_kernel, num_samples=10, warmup_steps=1)
-mcmc.run(x_train.reshape(-1,1), y_train)
+mcmc_boomerang = MCMC(boom_kernel, num_samples=NUM_SAMPLES, warmup_steps=WARM_UP)
+mcmc_boomerang.run(x_train.reshape(-1,1), y_train)
+trajectory = TrajectorySample(boom_kernel, mcmc_boomerang.get_samples(), NUM_SAMPLES)
 
-trajectory = TrajectorySample(boom_kernel, mcmc.get_samples(), 50)
+nuts_kernel = NUTS(bnn)
+mcmc_nuts = MCMC(nuts_kernel, num_samples=NUM_SAMPLES, warmup_steps=WARM_UP)
+mcmc_nuts.run(x_train.reshape(-1,1), y_train)
+
 
 # Set model to evaluation mode
 bnn.eval()
 
-# Set up predictive distribution
-predictive = pyro.infer.Predictive(bnn, posterior_samples = trajectory.sample)
+# Set up predictive distributions
+predictive_boomerang = pyro.infer.Predictive(bnn, posterior_samples = trajectory.sample)
+predictive_NUTS = pyro.infer.Predictive(bnn, posterior_samples = trajectory.sample)
 
 ## Training predictions
-y_train_pred = torch.mean(predictive(x_train.reshape(-1,1))['obs'], dim=0)
+y_train_pred_boomerang = torch.mean(predictive_boomerang(x_train.reshape(-1,1))['obs'], dim=0)
+y_train_pred_NUTS = torch.mean(predictive_NUTS(x_train.reshape(-1,1))['obs'], dim=0)
 
 
 pred_train_summary = summary(predictive(x_train.reshape(-1,1)))
