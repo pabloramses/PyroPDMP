@@ -18,12 +18,7 @@ from pyro.util import optional, torch_isnan
 from scipy import optimize
 from scipy import integrate
 
-"""
-WARNING: when not using the identity as reference measure care should be taken when splitting the variable to make sure 
-that the order of the components of the PDMP corresponds to that reference measure or some permutation in rows or 
-columns is needed. 
-"""
-
+"STANDARD BOOMERANG"
 class Boomerang(MCMCKernel):
 
     def __init__(
@@ -34,7 +29,6 @@ class Boomerang(MCMCKernel):
             transforms=None,
             Sigma=None,
             refresh_rate=1.0,
-            ihpp_sampler=None,
             batch_size=None,
             shuffle=True,
             max_plate_nesting=None,
@@ -76,6 +70,7 @@ class Boomerang(MCMCKernel):
             self.batch_size = batch_size
             self.shuffle = shuffle
 
+
         # Some inputs specific for Boomerang
         self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
         self.dim = self.Sigma.shape[0]
@@ -87,24 +82,27 @@ class Boomerang(MCMCKernel):
             self.Q = hessian_bound
         # self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
-        if ihpp_sampler == None:
-            self.ihpp_sampler = 'Exact'
-        else:
-            self.ihpp_sampler = ihpp_sampler
+
         #gibbs setting
         if parameter_list is not None:
             self.parameter_list = parameter_list
             self.hyperparameter_list = hyperparameter_list
-        self.gibbs_rate = gibbs_rate
+            self.gibbs_rate = gibbs_rate
+            self.gibbs = True
+        else:
+            self.gibbs = False
         #random walk
-        self.RW = False
-        if RW_scale is not None:
-            self.RW = True
-            self.scale = RW_scale
-        if list_of_layers is not None:
-            self.layers = list_of_layers
-        if list_of_types_of_parametres is not None:
-            self.types_of_parameters = list_of_types_of_parametres
+        if self.gibbs:
+            self.RW = False
+
+            if RW_scale is not None:
+                self.RW = True
+                self.scale = RW_scale
+            if list_of_layers is not None:
+                self.layers = list_of_layers
+            if list_of_types_of_parametres is not None:
+                self.types_of_parameters = list_of_types_of_parametres
+
         self.parametros_iniciales = initial_parameters
         self._reset()
         # self._adapter = WarmupAdapter(
@@ -232,137 +230,49 @@ class Boomerang(MCMCKernel):
         }
 
     def sample(self, params):
+        if self.gibbs:
+            z, v, potential_energy, z_grads = self._fetch_from_cache()
 
-        z, v, potential_energy, z_grads = self._fetch_from_cache()
-
-        if self.subsampling:
-            x, y = self.subsample()
-            self.recalculate_potential((x,y), z)
-        # recompute PE when cache is cleared
-        if z is None:
-            z = params
-            v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
-            z_grads, potential_energy = potential_grad(self.potential_fn, z)
-            self._cache(z, v, potential_energy, z_grads)
-        # Extract key of z
-        z_parameters, z_hyperparameters = self.split_param_hyper(z)
-        z_grads_parameters, z_grads_hyperparameters = self.split_param_hyper(z_grads)
-        if self.key_of_z == None:
-            self.extract_keys_of_z(z)  # extracts the keys of z just the first time it samples
-        if self.dimensions == None:  # only first time
-            self.dimensions = self.dimension_of_components(
-                z_parameters, self.parameter_list)  # collects the dimension of each component of the model (dimension of value of each key)
-        if self.shapes == None:
-            self.shapes = self.shapes_of_components(z_parameters)
-            self.shapes_hyperparametres = self.shapes_of_components(z_hyperparameters)
-
-
+            if self.subsampling:
+                x, y = self.subsample()
+                self.recalculate_potential((x,y), z)
+            # recompute PE when cache is cleared
+            if z is None:
+                z = params
+                v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                z_grads, potential_energy = potential_grad(self.potential_fn, z)
+                self._cache(z, v, potential_energy, z_grads)
+            # Extract key of z
+            z_parameters, z_hyperparameters = self.split_param_hyper(z)
+            z_grads_parameters, z_grads_hyperparameters = self.split_param_hyper(z_grads)
+            if self.key_of_z == None:
+                self.extract_keys_of_z(z)  # extracts the keys of z just the first time it samples
+            if self.dimensions == None:  # only first time
+                self.dimensions = self.dimension_of_components(
+                    z_parameters, self.parameter_list)  # collects the dimension of each component of the model (dimension of value of each key)
+            if self.shapes == None:
+                self.shapes = self.shapes_of_components(z_parameters)
+                self.shapes_hyperparametres = self.shapes_of_components(z_hyperparameters)
 
 
-        z_parameters_numpy = self.dict_of_tensors_to_numpy(z_parameters)
-        z_grads_parameters_numpy = self.dict_of_tensors_to_numpy(z_grads_parameters)
-        z_hyperparameters_numpy = self.dict_of_tensors_to_numpy(z_hyperparameters)
-        z_grads_hyperparameters_numpy = self.dict_of_tensors_to_numpy(z_grads_hyperparameters)
-        t = 0.0
-        # Modified gradU
-        updateSkeleton = False
-        finished = False
-
-        dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
-        dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
-        if self.ihpp_sampler == 'Exact':
-            gradU = z_grads_numpy - np.dot(np.linalg.inv(self.Sigma), (z_numpy - self.z_ref))  # O(d^2) to compute
-            M2 = np.sqrt(np.dot(gradU, gradU))
-            phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
-            a = np.dot(v, gradU)
-            b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
-            while not finished:
-                dt_switch_proposed = self.switchingtime(a, b)
-                self.dt_switch_proposed = dt_switch_proposed
-                dt = np.minimum(dt_switch_proposed, dt_refresh)
-                self._no_proposed_switches = self._no_proposed_switches + 1
-                # if t + dt > T:
-                #     dt = T - t
-                #     finished = True
-                #     updateSkeleton = True
-
-                # Update z and v
-                (y, v) = self.EllipticDynamics(dt, z_numpy - self.z_ref, v)
-                z_numpy = y + self.z_ref
-
-                # Convert to tensor to save and to compute gradient
-                z = self.numpy_to_dict_of_tensors(z_numpy)
-                z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
-                # convert z_grads_new back to numpy
-                z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
-
-                t = t + dt
-                a = a + b * dt
-                self.bound = a
-                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma),
-                                                   (z_numpy - self.z_ref))  # O(d^2) to compute
-                if not finished and dt_switch_proposed < dt_refresh:
-                    # if using corbella approach no need to update anything related to bound unless refresh
-                    switch_rate = np.dot(v, gradU)  # no need to take positive part
-                    simulated_rate = a
-                    if simulated_rate < switch_rate:
-                        self._no_boundary_violated = self._no_boundary_violated + 1
-                        # print("simulated rate: ", simulated_rate)
-                        # print("actual switching rate: ", switch_rate)
-                        # print("switching rate exceeds bound.")
-                        # Should not we raise value error?
-                        # raise ValueError("Switching rate exceeds bound.")
-
-                    # simul3 = 0.01
-                    if np.random.rand() * simulated_rate <= switch_rate:
-                        # obtain new velocity by reflection
-                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
-                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
-                            np.linalg.cholesky(self.Sigma), skewed_grad)
-                        phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
-                        a = -switch_rate
-                        b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
-
-                        updateSkeleton = True
-                        finished = True
-                        self._no_accepted_switches = self._no_accepted_switches + 1
-                    else:
-                        a = switch_rate
-                        updateSkeleton = False
-                        self._no_rejected_switches = self._no_rejected_switches + 1
-
-                    # update refreshment time and switching time bound
-                    dt_refresh = dt_refresh - dt_switch_proposed
 
 
-                elif not finished:
-                    # so we refresh
-                    self._no_refresh_switches = self._no_refresh_switches + 1
-                    updateSkeleton = True
-                    finished = True
-                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
-                    phaseSpaceNorm = np.sqrt(np.dot(z_numpy - self.z_ref, z_numpy - self.z_ref) + np.dot(v, v))
-                    a = np.dot(v, gradU)
-                    b = self.Q * phaseSpaceNorm ** 2 + M2 * phaseSpaceNorm
+            z_parameters_numpy = self.dict_of_tensors_to_numpy(z_parameters)
+            z_grads_parameters_numpy = self.dict_of_tensors_to_numpy(z_grads_parameters)
+            z_hyperparameters_numpy = self.dict_of_tensors_to_numpy(z_hyperparameters)
+            z_grads_hyperparameters_numpy = self.dict_of_tensors_to_numpy(z_grads_hyperparameters)
+            t = 0.0
+            # Modified gradU
+            updateSkeleton = False
+            finished = False
 
-                    # compute new refreshment time
-                    dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
-                else:
-                    pass
+            dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
+            dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
 
-                if updateSkeleton:
-                    self.total_samp = self.total_samp + 1
-                    # self._no_accepted_switches = self._no_accepted_switches + 1
-                    updateSkeleton = False
-                    self._cache(z, v, potential_energy_new, z_grads_new)
-                    self.t = self.t + dt
-                    self.dts.append(dt)
-
-        elif self.ihpp_sampler == 'Corbella':
             rebound = True
             while not finished:
                 if rebound:
-                    arg, a = self.corbella(z_parameters_numpy, z_hyperparameters, v, dt_refresh)
+                    arg, a = self.corbella(z_parameters_numpy, v, dt_refresh, z_hyperparameters=z_hyperparameters)
                     self.bound = a
                     rebound = False
                 if a == 0:
@@ -442,6 +352,116 @@ class Boomerang(MCMCKernel):
                     self.t = self.t + dt
                     self.dts.append(dt)
 
+        else:
+            z, v, potential_energy, z_grads = self._fetch_from_cache()
+
+            if self.subsampling:
+                x, y = self.subsample()
+                self.recalculate_potential((x, y), z)
+            # recompute PE when cache is cleared
+            if z is None:
+                z = params
+                v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                z_grads, potential_energy = potential_grad(self.potential_fn, z)
+                self._cache(z, v, potential_energy, z_grads)
+            # Extract key of z
+            #z_parameters, z_hyperparameters = self.split_param_hyper(z)
+            #z_grads_parameters, z_grads_hyperparameters = self.split_param_hyper(z_grads)
+            if self.key_of_z == None:
+                self.extract_keys_of_z(z)  # extracts the keys of z just the first time it samples
+            if self.dimensions == None:  # only first time
+                self.dimensions = self.dimension_of_components(
+                    z,
+                    self.parameter_list)  # collects the dimension of each component of the model (dimension of value of each key)
+            if self.shapes == None:
+                self.shapes = self.shapes_of_components(z)
+                #self.shapes_hyperparametres = self.shapes_of_components(z_hyperparameters)
+
+            z_numpy = self.dict_of_tensors_to_numpy(z)
+            z_grads_numpy = self.dict_of_tensors_to_numpy(z_grads)
+            t = 0.0
+            # Modified gradU
+            updateSkeleton = False
+            finished = False
+
+            dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
+            dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
+
+            rebound = True
+            while not finished:
+                if rebound:
+                    arg, a = self.corbella(z_numpy, v, dt_refresh)
+                    self.bound = a
+                    rebound = False
+                if a == 0:
+                    dt_switch_proposed = 1e16
+                else:
+                    dt_switch_proposed = self.switchingtime(a, 0)
+                self.dt_switch_proposed = dt_switch_proposed
+                dt = np.min(np.array([dt_switch_proposed, dt_refresh, dt_gibbs]))
+                self._no_proposed_switches = self._no_proposed_switches + 1
+                # Update z and v
+                (y, v) = self.EllipticDynamics(dt, z_numpy - self.z_ref, v)
+                z_numpy = y + self.z_ref
+
+                # Convert to tensor to save and to compute gradient
+                z = self.numpy_to_dict_of_tensors(z_numpy, self.key_of_z)
+
+                #z_rightlim = self.merge_param_hyper(z_parameters, z_hyperparameters)
+                z_grads_new, potential_energy_new = potential_grad(self.potential_fn, z)
+                #z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
+                # grads_new to numpy
+                z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
+                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma),
+                                                              (z_numpy - self.z_ref))
+                t = t + dt
+                if not finished and dt_switch_proposed < dt_refresh:
+                    switch_rate = np.dot(v, gradU)  # no need to take positive part
+                    simulated_rate = a
+                    if simulated_rate < switch_rate:
+                        self._no_boundary_violated = self._no_boundary_violated + 1
+
+                    if np.random.rand() * simulated_rate <= switch_rate:
+                        # obtain new velocity by reflection
+                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
+                            np.linalg.cholesky(self.Sigma), skewed_grad)
+                        updateSkeleton = True
+                        self.move = True
+                        finished = True
+                        rebound = True
+                        self._no_accepted_switches = self._no_accepted_switches + 1
+                    else:
+                        updateSkeleton = False
+                        self.move = False
+                        self._no_rejected_switches = self._no_rejected_switches + 1
+
+                    # update refreshment time and switching time bound
+                    dt_refresh = dt_refresh - dt_switch_proposed
+
+
+                elif not finished and dt_refresh < dt_switch_proposed:
+                    # so we refresh
+                    self._no_refresh_switches = self._no_refresh_switches + 1
+                    updateSkeleton = True
+                    self.move = True
+                    finished = True
+                    rebound = True
+                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+
+                    # compute new refreshment time
+                    dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
+
+                if updateSkeleton:
+                    self.total_samp = self.total_samp + 1
+                    # self._no_accepted_switches = self._no_accepted_switches + 1
+                    updateSkeleton = False
+                    self.v_skeleton = np.vstack((self.v_skeleton, np.transpose(v)))
+                    self._cache(z, v, potential_energy_new, z_grads_new)
+                    self.t = self.t + dt
+                    self.dts.append(dt)
+
+
         return z.copy()
 
     def extract_keys_of_z(self, z):
@@ -505,14 +525,20 @@ class Boomerang(MCMCKernel):
         ft = np.dot(vt, gradU)
         return np.maximum(0, ft)
 
-    def corbella(self, z_parameters, z_hyperparameters, v, tmax, check=True):
+    def corbella(self, z_parameters, v, tmax,  z_hyperparameters=None, check=True):
         def minus_rate_of_t(t):
             zt_parameters_numpy, vt = self.EllipticDynamics(t, z_parameters, v)
-            zt_parameters = self.numpy_to_dict_of_tensors(zt_parameters_numpy, self.parameter_list)
-            zt = self.merge_param_hyper(zt_parameters, z_hyperparameters)
+            if self.gibbs:
+                zt_parameters = self.numpy_to_dict_of_tensors(zt_parameters_numpy, self.parameter_list)
+                zt = self.merge_param_hyper(zt_parameters, z_hyperparameters)
+            else:
+                zt = self.numpy_to_dict_of_tensors(zt_parameters_numpy, self.key_of_z)
             z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
-            z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
-            z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
+            if self.gibbs:
+                z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
+                z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
+            else:
+                z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
             gradU = z_parameters_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_parameters_numpy - self.z_ref))
             ft = -np.dot(vt, gradU)
             return np.minimum(0, ft)

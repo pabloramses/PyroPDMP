@@ -22,8 +22,8 @@ batch_size = 100
 x_train = -2*torch.pi*torch.rand(100) + torch.pi
 y_train = torch.sin(x_train) + torch.normal(0., 0.1, size=(100,))
 
-from Pyro_Boomerang_sub import Boomerang
-from Pyro_Boomerang import Boomerang_2
+from Boomerang import Boomerang
+#from Pyro_Boomerang import Boomerang
 from TrajectorySample import TrajectorySample
 
 
@@ -124,7 +124,7 @@ lista = ["hidden.weight", "hidden.bias", "out.weight", "out.bias", "hidden.lambd
               "hidden.tau_bias", "out.lambda_weight", "out.tau_weight", "out.lambda_bias", "out.tau_bias"]
 
 boom_kernel = Boomerang(bnn, Sigma=np.eye(3*L+1), refresh_rate = 100, gibbs_rate=100,
-                        ihpp_sampler='Corbella', parameter_list=parameters, hyperparameter_list=hyperparameters, list_of_layers=layers,
+                        parameter_list=parameters, hyperparameter_list=hyperparameters, list_of_layers=layers,
                         list_of_types_of_parametres=types, RW_scale=1, initial_parameters=initial_values,
                         init_strategy=init_to_value(values=initial_values),batch_size=100)
 
