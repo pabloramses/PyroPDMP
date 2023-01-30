@@ -42,7 +42,8 @@ class Boomerang(MCMCKernel):
             RW_scale = None,
             initial_parameters=None,
             list_of_layers=None,
-            list_of_types_of_parametres=None
+            list_of_types_of_parametres=None,
+            t_max = None
     ):
         if not ((model is None) ^ (potential_fn is None)):
             raise ValueError("Only one of `model` or `potential_fn` must be specified.")
@@ -104,6 +105,7 @@ class Boomerang(MCMCKernel):
                 self.types_of_parameters = list_of_types_of_parametres
 
         self.parametros_iniciales = initial_parameters
+        self.t_max = t_max
         self._reset()
         # self._adapter = WarmupAdapter(
         #     step_size,
@@ -268,19 +270,23 @@ class Boomerang(MCMCKernel):
 
             dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
             dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
+            dt_limit = np.minimum(dt_gibbs, dt_gibbs)
+            subintervals = 2
+            t_max = dt_limit/subintervals
 
             rebound = True
             while not finished:
                 if rebound:
-                    arg, a = self.corbella(z_parameters_numpy, v, dt_refresh, z_hyperparameters=z_hyperparameters)
+                    arg, a = self.corbella(z_parameters_numpy, v, t_max, z_hyperparameters=z_hyperparameters)
                     self.bound = a
                     rebound = False
                 if a == 0:
                     dt_switch_proposed = 1e16
                 else:
+
                     dt_switch_proposed = self.switchingtime(a, 0)
-                self.dt_switch_proposed = dt_switch_proposed
-                dt = np.min(np.array([dt_switch_proposed, dt_refresh, dt_gibbs]))
+
+                dt = np.min(np.array([t_max, dt_switch_proposed, dt_refresh, dt_gibbs]))
                 self._no_proposed_switches = self._no_proposed_switches + 1
                 # Update z and v
                 (y, v) = self.EllipticDynamics(dt, z_parameters_numpy - self.z_ref, v)
@@ -296,7 +302,7 @@ class Boomerang(MCMCKernel):
                 z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
                 gradU = z_parameters_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_parameters_numpy - self.z_ref))
                 t = t + dt
-                if not finished and dt_switch_proposed < dt_refresh and dt_switch_proposed < dt_gibbs:
+                if not finished and dt_switch_proposed < dt_refresh and dt_switch_proposed < dt_gibbs and dt_switch_proposed < t_max:
                     switch_rate = np.dot(v, gradU)  # no need to take positive part
                     simulated_rate = a
                     if simulated_rate < switch_rate:
@@ -317,12 +323,19 @@ class Boomerang(MCMCKernel):
                         updateSkeleton = False
                         self.move = False
                         self._no_rejected_switches = self._no_rejected_switches + 1
-
                     # update refreshment time and switching time bound
                     dt_refresh = dt_refresh - dt_switch_proposed
+                    dt_gibbs = dt_gibbs - dt_switch_proposed
 
+                elif not finished and t_max <=dt_refresh and t_max <=dt_gibbs and t_max<dt_switch_proposed:
+                    updateSkeleton = False
+                    self.move = False
+                    rebound = True
+                    # update refreshment time and switching time bound
+                    dt_refresh = dt_refresh - t_max
+                    dt_gibbs = dt_gibbs - t_max
 
-                elif not finished and dt_refresh < dt_switch_proposed and dt_refresh < dt_gibbs:
+                elif not finished and dt_refresh < dt_switch_proposed and dt_refresh < dt_gibbs and dt_refresh < t_max:
                     # so we refresh
                     self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
@@ -333,7 +346,7 @@ class Boomerang(MCMCKernel):
 
                     # compute new refreshment time
                     dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
-                elif not finished and dt_gibbs < dt_switch_proposed and dt_gibbs < dt_refresh:
+                elif not finished and dt_gibbs < dt_switch_proposed and dt_gibbs < dt_refresh and dt_gibbs < t_max:
                     #update the hyperparameters
                     rebound = True
                     finished = True
@@ -341,7 +354,6 @@ class Boomerang(MCMCKernel):
                     self._no_proposed_gibbs = self._no_proposed_gibbs + 1
                     z_hyperparameters = self.rwmh_HP(z_parameters, z_hyperparameters, scale=self.scale)
                     dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
-
                 if updateSkeleton:
                     z = self.merge_param_hyper(z_parameters, z_hyperparameters)
                     self.total_samp = self.total_samp + 1
