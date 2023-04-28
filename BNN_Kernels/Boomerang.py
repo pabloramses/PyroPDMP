@@ -29,6 +29,7 @@ class Boomerang(MCMCKernel):
             transforms=None,
             Sigma=None,
             refresh_rate=1.0,
+            subintervals=1,
             batch_size=None,
             shuffle=True,
             max_plate_nesting=None,
@@ -64,6 +65,7 @@ class Boomerang(MCMCKernel):
         self.t = 0.0
         self.dts = [0.0]
         self.move = False
+        self.subintervals = subintervals
         if batch_size is None:
             self.subsampling = False
         else:
@@ -73,14 +75,16 @@ class Boomerang(MCMCKernel):
 
 
         # Some inputs specific for Boomerang
-        self.Sigma = Sigma  # np.array([[3,0.5],[0.5,3]])
+        self.Sigma = Sigma
+        #self.invSigma = np.linalg.inv(self.Sigma)
+        self.invSigma = Sigma
         self.dim = self.Sigma.shape[0]
         self.z_ref = np.zeros(self.dim)  # mean of reference measure
-        if hessian_bound == None:
-            self.Q = np.linalg.norm(
-                np.linalg.inv(self.Sigma))  # currently -> bound on the hessian of the energy for gaussian
-        else:
-            self.Q = hessian_bound
+        #if hessian_bound == None:
+            #self.Q = np.linalg.norm(
+                #self.invSigma)  # currently -> bound on the hessian of the energy for gaussian
+        #else:
+            #self.Q = hessian_bound
         # self.Q = np.array([[2000,2000],[2000,2000]])
         self.refresh_rate = refresh_rate
 
@@ -174,7 +178,8 @@ class Boomerang(MCMCKernel):
             z_grads, potential_energy = {}, self.potential_fn(self.initial_params)
         # Initiate a velocity
         #print(z)
-        initial_v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+        #initial_v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+        initial_v = np.random.normal(0, 1, self.dim)
         self.v_skeleton = initial_v
         self._cache(self.initial_params, initial_v, potential_energy, z_grads)
 
@@ -241,7 +246,8 @@ class Boomerang(MCMCKernel):
             # recompute PE when cache is cleared
             if z is None:
                 z = params
-                v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                v = np.random.normal(0, 1, self.dim)
+                #v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
                 z_grads, potential_energy = potential_grad(self.potential_fn, z)
                 self._cache(z, v, potential_energy, z_grads)
             # Extract key of z
@@ -271,8 +277,7 @@ class Boomerang(MCMCKernel):
             dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
             dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
             dt_limit = np.minimum(dt_gibbs, dt_gibbs)
-            subintervals = 2
-            t_max = dt_limit/subintervals
+            t_max = dt_limit/self.subintervals
 
             rebound = True
             while not finished:
@@ -300,7 +305,7 @@ class Boomerang(MCMCKernel):
                 z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
                 # grads_new to numpy
                 z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
-                gradU = z_parameters_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (z_parameters_numpy - self.z_ref))
+                gradU = z_parameters_grads_new_numpy - np.dot(self.invSigma, (z_parameters_numpy - self.z_ref))
                 t = t + dt
                 if not finished and dt_switch_proposed < dt_refresh and dt_switch_proposed < dt_gibbs and dt_switch_proposed < t_max:
                     switch_rate = np.dot(v, gradU)  # no need to take positive part
@@ -311,9 +316,11 @@ class Boomerang(MCMCKernel):
 
                     if np.random.rand() * simulated_rate <= switch_rate:
                         # obtain new velocity by reflection
-                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        #skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        skewed_grad = np.dot(self.Sigma, gradU)
+                        #v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
                         v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
-                            np.linalg.cholesky(self.Sigma), skewed_grad)
+                            self.Sigma, skewed_grad)
                         updateSkeleton = True
                         self.move = True
                         finished = True
@@ -342,7 +349,8 @@ class Boomerang(MCMCKernel):
                     self.move = True
                     finished = True
                     rebound = True
-                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                    #v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                    v = np.random.normal(0, 1, self.dim)
 
                     # compute new refreshment time
                     dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
@@ -373,7 +381,8 @@ class Boomerang(MCMCKernel):
             # recompute PE when cache is cleared
             if z is None:
                 z = params
-                v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                #v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                v = np.random.normal(0, 1, self.dim)
                 z_grads, potential_energy = potential_grad(self.potential_fn, z)
                 self._cache(z, v, potential_energy, z_grads)
             # Extract key of z
@@ -398,7 +407,8 @@ class Boomerang(MCMCKernel):
 
             dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
             dt_gibbs = -np.log(np.random.rand()) / self.gibbs_rate
-
+            dt_limit = np.minimum(dt_gibbs, dt_gibbs)
+            t_max = dt_limit / self.subintervals
             rebound = True
             while not finished:
                 if rebound:
@@ -424,10 +434,10 @@ class Boomerang(MCMCKernel):
                 #z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
                 # grads_new to numpy
                 z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
-                gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma),
+                gradU = z_grads_new_numpy - np.dot(self.invSigma,
                                                               (z_numpy - self.z_ref))
                 t = t + dt
-                if not finished and dt_switch_proposed < dt_refresh:
+                if not finished and dt_switch_proposed < dt_refresh and dt_switch_proposed < t_max:
                     switch_rate = np.dot(v, gradU)  # no need to take positive part
                     simulated_rate = a
                     if simulated_rate < switch_rate:
@@ -435,9 +445,10 @@ class Boomerang(MCMCKernel):
 
                     if np.random.rand() * simulated_rate <= switch_rate:
                         # obtain new velocity by reflection
-                        skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
-                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(
-                            np.linalg.cholesky(self.Sigma), skewed_grad)
+                        #skewed_grad = np.dot(np.transpose(np.linalg.cholesky(self.Sigma)), gradU)
+                        skewed_grad = gradU
+                        #v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * np.dot(np.linalg.cholesky(self.Sigma), skewed_grad)
+                        v = v - 2 * (switch_rate / np.dot(skewed_grad, skewed_grad)) * skewed_grad
                         updateSkeleton = True
                         self.move = True
                         finished = True
@@ -452,18 +463,26 @@ class Boomerang(MCMCKernel):
                     dt_refresh = dt_refresh - dt_switch_proposed
 
 
-                elif not finished and dt_refresh < dt_switch_proposed:
+                elif not finished and dt_refresh < dt_switch_proposed and dt_refresh < t_max:
                     # so we refresh
                     self._no_refresh_switches = self._no_refresh_switches + 1
                     updateSkeleton = True
                     self.move = True
                     finished = True
                     rebound = True
-                    v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                    #v = np.dot(np.linalg.cholesky(self.Sigma), np.random.normal(0, 1, self.dim))
+                    v = np.random.normal(0, 1, self.dim)
 
                     # compute new refreshment time
                     dt_refresh = -np.log(np.random.rand()) / self.refresh_rate
 
+                elif not finished and t_max <=dt_refresh and t_max<dt_switch_proposed:
+                    updateSkeleton = False
+                    self.move = False
+                    rebound = True
+                    # update refreshment time and switching time bound
+                    dt_refresh = dt_refresh - t_max
+                    dt_gibbs = dt_gibbs - t_max
                 if updateSkeleton:
                     self.total_samp = self.total_samp + 1
                     # self._no_accepted_switches = self._no_accepted_switches + 1
@@ -533,7 +552,7 @@ class Boomerang(MCMCKernel):
         zt = self.numpy_to_dict_of_tensors(zt_numpy, self.key_of_z)
         z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
         z_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
-        gradU = z_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_numpy - self.z_ref))
+        gradU = z_grads_new_numpy - np.dot(self.invSigma, (zt_numpy - self.z_ref))
         ft = np.dot(vt, gradU)
         return np.maximum(0, ft)
 
@@ -551,7 +570,7 @@ class Boomerang(MCMCKernel):
                 z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
             else:
                 z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_grads_new)
-            gradU = z_parameters_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_parameters_numpy - self.z_ref))
+            gradU = z_parameters_grads_new_numpy - np.dot(self.invSigma, (zt_parameters_numpy - self.z_ref))
             ft = -np.dot(vt, gradU)
             return np.minimum(0, ft)
 
@@ -797,7 +816,7 @@ class Boomerang(MCMCKernel):
         z_grads_new, potential_energy_new = potential_grad(self.potential_fn, zt)
         z_parameters_grads_new, z_hyperparameters_grads_new = self.split_param_hyper(z_grads_new)
         z_parameters_grads_new_numpy = self.dict_of_tensors_to_numpy(z_parameters_grads_new)
-        gradU = z_parameters_grads_new_numpy - np.dot(np.linalg.inv(self.Sigma), (zt_parameters_numpy - self.z_ref))
+        gradU = z_parameters_grads_new_numpy - np.dot(self.invSigma, (zt_parameters_numpy - self.z_ref))
         ft = np.dot(vt, gradU)
         return np.maximum(0, ft)
 
